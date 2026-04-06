@@ -19,13 +19,40 @@ export function NewMealForm() {
     }
   }
 
+  const compressImage = (file: File): Promise<Blob> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = (e) => {
+        const img = new Image()
+        img.src = e.target?.result as string
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          const MAX_WIDTH = 1200
+          const scaleSize = img.width > MAX_WIDTH ? MAX_WIDTH / img.width : 1
+          canvas.width = img.width * scaleSize
+          canvas.height = img.height * scaleSize
+          const ctx = canvas.getContext('2d')
+          ctx?.drawImage(img, 0, 0, canvas.width, canvas.height)
+          canvas.toBlob((blob) => { if (blob) resolve(blob) }, 'image/jpeg', 0.8)
+        }
+      }
+    })
+  }
+
   const handleSubmit = async (formData: FormData) => {
     setIsUploading(true)
     try {
+      const photo = formData.get('photo') as File
+      if (photo && photo.size > 0) {
+        const compressedBlob = await compressImage(photo)
+        formData.set('photo', compressedBlob, 'meal.jpg')
+      }
       await createMeal(formData)
       setIsOpen(false)
       setPreview(null)
     } catch (err) {
+      console.error(err)
       alert('Error al guardar. Inténtalo de nuevo.')
     } finally {
       setIsUploading(false)
@@ -60,7 +87,16 @@ export function NewMealForm() {
                 <span className="text-sm font-medium">Tocar para añadir foto</span>
               </button>
             )}
-            <input type="file" name="photo" ref={fileInputRef} onChange={handleImageChange} accept="image/*" className="hidden" required />
+            <input 
+              type="file" 
+              name="photo" 
+              ref={fileInputRef} 
+              onChange={handleImageChange} 
+              accept="image/*" 
+              capture="environment"
+              className="hidden" 
+              required 
+            />
           </div>
           <div className="space-y-4">
             <div>
@@ -72,6 +108,16 @@ export function NewMealForm() {
                 <option value="Cena">Cena</option>
                 <option value="Snack">Snack</option>
               </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Fecha y Hora</label>
+              <input 
+                type="datetime-local" 
+                name="mealDate" 
+                defaultValue={new Date().toISOString().slice(0, 16)}
+                required 
+                className="block w-full rounded-lg border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none focus:border-blue-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
+              />
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Comentarios</label>

@@ -13,7 +13,7 @@ export default async function NutritionistPage({ searchParams }: { searchParams:
   const { data: patients } = await supabase.from('profiles').select('id, email').eq('nutritionist_id', user.id)
   const patientIds = patients?.map((p) => p.id) || []
 
-  let query = supabase.from('meals').select('*, patient:profiles!meals_patient_id_fkey(id, email), interactions(*)').in('patient_id', patientIds).order('created_at', { ascending: false })
+  let query = supabase.from('meals').select('*, patient:profiles!meals_patient_id_fkey(id, email), interactions(*)').in('patient_id', patientIds).order('meal_date', { ascending: false })
   if (params.patientId) query = query.eq('patient_id', params.patientId)
 
   const { data: meals, error } = await query

@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { Trash2, Heart, Edit2, X, Check } from 'lucide-react'
-import { deleteMeal, updateMealText } from '@/app/patient/actions'
+import { Trash2, Heart, Edit2, X, Check, Calendar } from 'lucide-react'
+import { deleteMeal, updateMeal } from '@/app/patient/actions'
 
 interface MealCardProps {
   meal: {
@@ -12,6 +12,7 @@ interface MealCardProps {
     created_at: string
     meal_type: string
     comments: string
+    meal_date: string
     photo_urls: string[]
     interactions?: {
       id: string
@@ -26,6 +27,7 @@ interface MealCardProps {
 export function MealCard({ meal, isEditable }: MealCardProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editedComments, setEditedComments] = useState(meal.comments || '')
+  const [editedMealDate, setEditedMealDate] = useState(new Date(meal.meal_date || meal.created_at).toISOString().slice(0, 16))
   const [isUpdating, setIsUpdating] = useState(false)
 
   const handleDelete = async () => {
@@ -41,10 +43,10 @@ export function MealCard({ meal, isEditable }: MealCardProps) {
   const handleUpdate = async () => {
     try {
       setIsUpdating(true)
-      await updateMealText(meal.id, editedComments, meal.meal_type)
+      await updateMeal(meal.id, editedComments, meal.meal_type, new Date(editedMealDate).toISOString())
       setIsEditing(false)
     } catch (err) {
-      alert('Error updating. Pleas try again.')
+      alert('Error updating. Please try again.')
     } finally {
       setIsUpdating(false)
     }
@@ -67,9 +69,12 @@ export function MealCard({ meal, isEditable }: MealCardProps) {
 
       <div className="p-4">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">
-            {formatDistanceToNow(new Date(meal.created_at), { addSuffix: true, locale: es })}
-          </span>
+          <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            <Calendar size={12} className="text-zinc-400" />
+            <span>
+              {new Date(meal.meal_date || meal.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
           {isEditable && !isEditing && (
             <div className="flex gap-2">
               <button onClick={() => setIsEditing(true)} className="p-1 text-zinc-400 hover:text-blue-500" title="Editar texto">
@@ -83,14 +88,26 @@ export function MealCard({ meal, isEditable }: MealCardProps) {
         </div>
 
         {isEditing ? (
-          <div className="mt-3">
-            <textarea
-              className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-900 outline-none focus:border-blue-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
-              rows={3}
-              value={editedComments}
-              onChange={(e) => setEditedComments(e.target.value)}
-              placeholder="¿Qué comiste?"
-            />
+          <div className="mt-3 space-y-3">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Comentarios</label>
+              <textarea
+                className="mt-1 w-full rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-900 outline-none focus:border-blue-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+                rows={3}
+                value={editedComments}
+                onChange={(e) => setEditedComments(e.target.value)}
+                placeholder="¿Qué comiste?"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Día y Hora</label>
+              <input 
+                type="datetime-local" 
+                value={editedMealDate}
+                onChange={(e) => setEditedMealDate(e.target.value)}
+                className="mt-1 block w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 outline-none focus:border-blue-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
+              />
+            </div>
             <div className="mt-2 flex justify-end gap-2">
               <button onClick={() => setIsEditing(false)} className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800">
                 <X size={16} />

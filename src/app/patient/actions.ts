@@ -10,6 +10,7 @@ export async function createMeal(formData: FormData) {
 
   const mealType = formData.get('mealType') as string
   const comments = formData.get('comments') as string
+  const mealDate = formData.get('mealDate') as string || new Date().toISOString()
   const photoUrls: string[] = []
 
   const photo = formData.get('photo') as File
@@ -23,7 +24,13 @@ export async function createMeal(formData: FormData) {
     photoUrls.push(publicUrl)
   }
 
-  const { error } = await supabase.from('meals').insert({ patient_id: user.id, meal_type: mealType, comments, photo_urls: photoUrls })
+  const { error } = await supabase.from('meals').insert({ 
+    patient_id: user.id, 
+    meal_type: mealType, 
+    comments, 
+    photo_urls: photoUrls,
+    meal_date: mealDate
+  })
   if (error) throw new Error(`Database error: ${error.message}`)
   revalidatePath('/patient')
 }
@@ -36,11 +43,11 @@ export async function deleteMeal(mealId: string) {
   revalidatePath('/patient')
 }
 
-export async function updateMealText(mealId: string, comments: string, mealType: string) {
+export async function updateMeal(mealId: string, comments: string, mealType: string, mealDate: string) {
   const supabase = await createClient()
   const { error } = await supabase
     .from('meals')
-    .update({ comments, meal_type: mealType })
+    .update({ comments, meal_type: mealType, meal_date: mealDate })
     .eq('id', mealId)
 
   if (error) throw new Error(`Update failed: ${error.message}`)

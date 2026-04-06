@@ -10,7 +10,7 @@ export default async function PatientDashboard() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: meals, error } = await supabase.from('meals').select('*, interactions(*)').eq('patient_id', user.id).order('created_at', { ascending: false })
+  const { data: meals, error } = await supabase.from('meals').select('*, interactions(*)').eq('patient_id', user.id).order('meal_date', { ascending: false })
   if (error) console.error('Error fetching meals:', error)
 
   const isWithin24Hours = (date: string) => {
@@ -39,7 +39,7 @@ export default async function PatientDashboard() {
               <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">Toca el botón "+" para empezar.</p>
             </div>
           ) : (
-            meals.map((meal) => <MealCard key={meal.id} meal={meal} isEditable={isWithin24Hours(meal.created_at)} />)
+            meals.map((meal) => <MealCard key={meal.id} meal={meal} isEditable={isWithin24Hours(meal.meal_date || meal.created_at)} />)
           )}
         </div>
       </main>

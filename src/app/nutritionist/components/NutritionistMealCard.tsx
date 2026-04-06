@@ -12,6 +12,7 @@ interface NutritionistMealCardProps {
     created_at: string
     meal_type: string
     comments: string
+    meal_date: string
     photo_urls: string[]
     patient: { email: string }
   }
@@ -52,7 +53,7 @@ export function NutritionistMealCard({ meal, interactions }: NutritionistMealCar
     <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-lg dark:border dark:border-white/10 dark:bg-zinc-900">
       <div className="flex items-center gap-3 p-4">
         <div className="h-10 w-10 flex-shrink-0 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold dark:bg-blue-900/30">{meal.patient.email[0].toUpperCase()}</div>
-        <div><p className="text-sm font-bold text-zinc-900 dark:text-zinc-50">{meal.patient.email}</p><p className="text-xs text-zinc-500">{formatDistanceToNow(new Date(meal.created_at), { addSuffix: true, locale: es })}</p></div>
+        <div><p className="text-sm font-bold text-zinc-900 dark:text-zinc-50">{meal.patient.email}</p><p className="text-xs text-zinc-500">{new Date(meal.meal_date || meal.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p></div>
       </div>
       <div className="relative aspect-square w-full">
         {meal.photo_urls[0] ? <img src={meal.photo_urls[0]} alt={meal.meal_type} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center bg-zinc-100 dark:bg-zinc-800"><span className="text-sm text-zinc-400">Sin foto</span></div>}
