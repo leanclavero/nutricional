@@ -10,6 +10,13 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Nutri-Feed",
   description: "Monitoreo nutricional inteligente",
+  manifest: "/manifest.json",
+  themeColor: "#ffffff",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Nutri-Feed",
+  },
 };
 
 export default function RootLayout({
@@ -19,6 +26,23 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                  }, function(err) {
+                    console.log('ServiceWorker registration failed: ', err);
+                  });
+                });
+              }
+            `,
+          }}
+        />
+      </head>
       <body className={`${inter.variable} antialiased font-sans`}>
         {children}
       </body>

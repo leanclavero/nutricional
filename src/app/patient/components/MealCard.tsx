@@ -1,10 +1,10 @@
 'use client'
 
-import React from 'react'
+import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { Trash2, Heart } from 'lucide-react'
-import { deleteMeal } from '@/app/patient/actions'
+import { Trash2, Heart, Edit2, X, Check } from 'lucide-react'
+import { deleteMeal, updateMealText } from '@/app/patient/actions'
 
 interface MealCardProps {
   meal: {
@@ -24,6 +24,10 @@ interface MealCardProps {
 }
 
 export function MealCard({ meal, isEditable }: MealCardProps) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [editedComments, setEditedComments] = useState(meal.comments || '')
+  const [isUpdating, setIsUpdating] = useState(false)
+
   const handleDelete = async () => {
     if (confirm('¿Estás seguro de que quieres eliminar este registro?')) {
       try {
@@ -31,6 +35,18 @@ export function MealCard({ meal, isEditable }: MealCardProps) {
       } catch (err) {
         alert('No se pudo eliminar. Solo es posible dentro de las 24 horas.')
       }
+    }
+  }
+
+  const handleUpdate = async () => {
+    try {
+      setIsUpdating(true)
+      await updateMealText(meal.id, editedComments, meal.meal_type)
+      setIsEditing(false)
+    } catch (err) {
+      alert('Error updating. Pleas try again.')
+    } finally {
+      setIsUpdating(false)
     }
   }
 
@@ -54,14 +70,39 @@ export function MealCard({ meal, isEditable }: MealCardProps) {
           <span className="text-xs text-zinc-500 dark:text-zinc-400">
             {formatDistanceToNow(new Date(meal.created_at), { addSuffix: true, locale: es })}
           </span>
-          {isEditable && (
-            <button onClick={handleDelete} className="p-1 text-zinc-400 hover:text-red-500" title="Eliminar">
-              <Trash2 size={18} />
-            </button>
+          {isEditable && !isEditing && (
+            <div className="flex gap-2">
+              <button onClick={() => setIsEditing(true)} className="p-1 text-zinc-400 hover:text-blue-500" title="Editar texto">
+                <Edit2 size={16} />
+              </button>
+              <button onClick={handleDelete} className="p-1 text-zinc-400 hover:text-red-500" title="Eliminar">
+                <Trash2 size={16} />
+              </button>
+            </div>
           )}
         </div>
 
-        {meal.comments && <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">{meal.comments}</p>}
+        {isEditing ? (
+          <div className="mt-3">
+            <textarea
+              className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-900 outline-none focus:border-blue-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+              rows={3}
+              value={editedComments}
+              onChange={(e) => setEditedComments(e.target.value)}
+              placeholder="¿Qué comiste?"
+            />
+            <div className="mt-2 flex justify-end gap-2">
+              <button onClick={() => setIsEditing(false)} className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800">
+                <X size={16} />
+              </button>
+              <button onClick={handleUpdate} disabled={isUpdating} className="flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
+                <Check size={14} /> Guardar
+              </button>
+            </div>
+          </div>
+        ) : (
+          meal.comments && <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">{meal.comments}</p>
+        )}
 
         {meal.interactions && meal.interactions.length > 0 && (
           <div className="mt-4 space-y-2 border-t border-zinc-100 pt-3 dark:border-white/10">

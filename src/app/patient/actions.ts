@@ -33,4 +33,16 @@ export async function deleteMeal(mealId: string) {
   const { error } = await supabase.from('meals').delete().eq('id', mealId)
   if (error) throw new Error(`Delete failed: ${error.message}`)
   revalidatePath('/patient')
+  revalidatePath('/patient')
+}
+
+export async function updateMealText(mealId: string, comments: string, mealType: string) {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('meals')
+    .update({ comments, meal_type: mealType })
+    .eq('id', mealId)
+
+  if (error) throw new Error(`Update failed: ${error.message}`)
+  revalidatePath('/patient')
 }
