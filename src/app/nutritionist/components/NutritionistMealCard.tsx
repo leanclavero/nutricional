@@ -15,7 +15,12 @@ interface NutritionistMealCardProps {
     photo_urls: string[]
     patient: { email: string }
   }
-  interactions: any[]
+  interactions: {
+    id: string
+    type: 'like' | 'comment'
+    content: string | null
+    created_at: string
+  }[]
 }
 
 export function NutritionistMealCard({ meal, interactions }: NutritionistMealCardProps) {
@@ -62,7 +67,7 @@ export function NutritionistMealCard({ meal, interactions }: NutritionistMealCar
             </button>
             <div className="flex items-center gap-1 text-zinc-400"><MessageCircle size={20} /><span className="text-xs font-medium">{nutritionistComments.length} Comentarios</span></div>
           </div>
-          {nutritionistComments.length > 0 && nutritionistComments.map((c: any) => <div key={c.id} className="rounded-lg bg-zinc-50 p-2 text-sm dark:bg-zinc-800/50 dark:text-zinc-300"><span className="font-bold text-blue-600 mr-2">Feedback:</span>{c.content}</div>)}
+          {nutritionistComments.length > 0 && nutritionistComments.map((c) => <div key={c.id} className="rounded-lg bg-zinc-50 p-2 text-sm dark:bg-zinc-800/50 dark:text-zinc-300"><span className="font-bold text-blue-600 mr-2">Feedback:</span>{c.content}</div>)}
           <form onSubmit={handleComment} className="mt-4 flex items-center gap-2">
             <input type="text" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Añadir feedback..." className="flex-1 rounded-full border border-zinc-200 bg-zinc-50 px-4 py-2 text-sm outline-none focus:border-blue-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50" />
             <button type="submit" disabled={isSubmitting || !comment.trim()} className="rounded-full bg-blue-600 p-2 text-white hover:bg-blue-700 disabled:opacity-50"><Send size={18} /></button>

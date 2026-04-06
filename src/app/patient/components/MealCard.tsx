@@ -13,7 +13,12 @@ interface MealCardProps {
     meal_type: string
     comments: string
     photo_urls: string[]
-    interactions?: any[]
+    interactions?: {
+      id: string
+      type: 'like' | 'comment'
+      content: string | null
+      created_at: string
+    }[]
   }
   isEditable: boolean
 }
@@ -60,7 +65,7 @@ export function MealCard({ meal, isEditable }: MealCardProps) {
 
         {meal.interactions && meal.interactions.length > 0 && (
           <div className="mt-4 space-y-2 border-t border-zinc-100 pt-3 dark:border-white/10">
-            {meal.interactions.map((interaction: any) => (
+            {meal.interactions.map((interaction) => (
               <div key={interaction.id} className="flex flex-col gap-1">
                 {interaction.type === 'like' ? (
                   <div className="flex items-center gap-1 text-xs font-semibold text-red-500">

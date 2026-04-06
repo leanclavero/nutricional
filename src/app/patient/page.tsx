@@ -39,7 +39,7 @@ export default async function PatientDashboard() {
               <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">Toca el botón "+" para empezar.</p>
             </div>
           ) : (
-            meals.map((meal: any) => <MealCard key={meal.id} meal={meal} isEditable={isWithin24Hours(meal.created_at)} />)
+            meals.map((meal) => <MealCard key={meal.id} meal={meal} isEditable={isWithin24Hours(meal.created_at)} />)
           )}
         </div>
       </main>

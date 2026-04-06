@@ -46,7 +46,7 @@ export default async function NutritionistPage({ searchParams }: { searchParams:
               <Search size={32} className="text-zinc-300" /><p className="mt-4 text-zinc-500 dark:text-zinc-400">No hay registros.</p>
             </div>
           ) : (
-            meals.map((meal: any) => <NutritionistMealCard key={meal.id} meal={meal} interactions={meal.interactions} />)
+            meals.map((meal) => <NutritionistMealCard key={meal.id} meal={meal} interactions={meal.interactions} />)
           )}
         </div>
       </main>
