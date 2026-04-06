@@ -54,3 +54,26 @@ export async function logout() {
   revalidatePath('/', 'layout')
   redirect('/login')
 }
+
+export async function completeProfile(formData: FormData) {
+  const supabase = await createClient()
+  const role = formData.get('role') as string
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    redirect('/login')
+  }
+
+  const { error } = await supabase.from('profiles').insert({
+    id: user.id,
+    email: user.email,
+    role: role,
+  })
+
+  if (error) {
+    console.error('Failed to complete profile:', error)
+  }
+
+  revalidatePath('/', 'layout')
+  redirect('/')
+}
