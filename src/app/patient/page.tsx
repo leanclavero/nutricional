@@ -16,10 +16,10 @@ export default async function PatientDashboard() {
     redirect('/login')
   }
 
-  // Fetch meals for the current patient
+  // Fetch meals for the current patient with interactions
   const { data: meals, error } = await supabase
     .from('meals')
-    .select('*')
+    .select('*, interactions(*)')
     .eq('patient_id', user.id)
     .order('created_at', { ascending: false })
 

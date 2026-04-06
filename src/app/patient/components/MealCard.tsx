@@ -13,6 +13,7 @@ interface MealCardProps {
     meal_type: string
     comments: string
     photo_urls: string[]
+    interactions?: any[]
   }
   isEditable: boolean
 }
@@ -69,17 +70,35 @@ export function MealCard({ meal, isEditable }: MealCardProps) {
           </p>
         )}
 
-        {/* Placeholder for interactions count in the future */}
-        <div className="mt-4 flex items-center gap-4 border-t border-zinc-100 pt-3 dark:border-white/10">
-          <div className="flex items-center gap-1 text-xs text-zinc-500">
-            <Heart size={14} />
-            <span>Me gusta</span>
+        {/* Professional Nutritionist Feedback Section */}
+        {(meal.interactions && meal.interactions.length > 0) && (
+          <div className="mt-4 space-y-2 border-t border-zinc-100 pt-3 dark:border-white/10">
+            {meal.interactions.map((interaction: any) => (
+              <div key={interaction.id} className="flex flex-col gap-1">
+                {interaction.type === 'like' ? (
+                  <div className="flex items-center gap-1 text-xs font-semibold text-red-500">
+                    <Heart size={12} fill="currentColor" />
+                    <span>Tu nutricionista ha visto esta comida</span>
+                  </div>
+                ) : (
+                  <div className="rounded-lg bg-blue-50 p-2 text-xs text-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
+                    <span className="font-bold">Feedback:</span> {interaction.content}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-          <div className="flex items-center gap-1 text-xs text-zinc-500">
-            <MessageCircle size={14} />
-            <span>Comentar</span>
+        )}
+
+        {/* Quick Footer for interactions count if needed */}
+        {(!meal.interactions || meal.interactions.length === 0) && (
+          <div className="mt-4 flex items-center gap-4 border-t border-zinc-100 pt-3 dark:border-white/10">
+            <div className="flex items-center gap-1 text-xs text-zinc-400">
+              <Heart size={14} />
+              <span>Sin feedback profesional aún</span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
