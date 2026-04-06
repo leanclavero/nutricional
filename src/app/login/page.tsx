@@ -5,7 +5,9 @@ import { AlertCircle, Loader2 } from 'lucide-react'
 import { login } from '@/app/auth/actions'
 import { useSearchParams } from 'next/navigation'
 
-export default function LoginPage() {
+import { Suspense } from 'react'
+
+function LoginContent() {
   const searchParams = useSearchParams()
   const errorParam = searchParams.get('error')
 
@@ -91,6 +93,14 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-blue-600" /></div>}>
+      <LoginContent />
+    </Suspense>
   )
 }
 

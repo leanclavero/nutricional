@@ -5,7 +5,9 @@ import { AlertCircle, Loader2 } from 'lucide-react'
 import { signup } from '@/app/auth/actions'
 import { useFormStatus } from 'react-dom'
 
-export default function SignupPage() {
+import { Suspense } from 'react'
+
+function SignupContent() {
   const searchParams = useSearchParams()
   const errorParam = searchParams.get('error')
 
@@ -107,6 +109,14 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-blue-600" /></div>}>
+      <SignupContent />
+    </Suspense>
   )
 }
 
