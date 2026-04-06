@@ -5,14 +5,8 @@ import { createClient } from '@/utils/supabase/server'
 
 export async function addInteraction(formData: FormData) {
   const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    throw new Error('User not authenticated')
-  }
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('User not authenticated')
 
   const mealId = formData.get('mealId') as string
   const type = formData.get('type') as 'like' | 'comment'
@@ -25,25 +19,13 @@ export async function addInteraction(formData: FormData) {
     content,
   })
 
-  if (error) {
-    console.error('Interaction error:', error)
-    throw new Error(`Failed to add interaction: ${error.message}`)
-  }
-
+  if (error) throw new Error(`Interaction failed: ${error.message}`)
   revalidatePath('/nutritionist')
 }
 
 export async function deleteInteraction(interactionId: string) {
   const supabase = await createClient()
-
-  const { error } = await supabase
-    .from('interactions')
-    .delete()
-    .eq('id', interactionId)
-
-  if (error) {
-    throw new Error(`Failed to delete interaction: ${error.message}`)
-  }
-
+  const { error } = await supabase.from('interactions').delete().eq('id', interactionId)
+  if (error) throw new Error(`Delete failed: ${error.message}`)
   revalidatePath('/nutritionist')
 }
