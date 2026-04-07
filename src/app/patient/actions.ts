@@ -76,3 +76,31 @@ export async function connectNutritionist(email: string) {
   if (error) throw new Error(`Error vinculando: ${error.message}`)
   revalidatePath('/patient')
 }
+
+export async function addPatientComment(mealId: string, content: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { error } = await supabase.from('interactions').insert({
+    meal_id: mealId,
+    user_id: user.id,
+    type: 'comment',
+    content
+  })
+
+  if (error) throw new Error(`Comment failed: ${error.message}`)
+
+  // Notify nutritionist if exists
+  const { data: profile } = await supabase.from('profiles').select('nutritionist_id').eq('id', user.id).single()
+  if (profile?.nutritionist_id) {
+    await supabase.from('notifications').insert({
+      user_id: profile.nutritionist_id,
+      meal_id: mealId,
+      content: `Nuevo mensaje de paciente en registro de comida.`
+    })
+  }
+
+  revalidatePath('/patient')
+  revalidatePath('/nutritionist')
+}

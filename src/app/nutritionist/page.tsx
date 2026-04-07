@@ -5,12 +5,13 @@ import { logout } from '@/app/auth/actions'
 import { LogOut, Users, Search, Activity, MessageSquare, Heart } from 'lucide-react'
 import { PatientList } from './components/PatientList'
 
-export default async function NutritionistPage({ searchParams }: { searchParams: { patientId?: string } }) {
+export default async function NutritionistPage({ searchParams }: { searchParams: { patientId?: string, filter?: 'vistos' | 'pendientes' | 'favoritos' } }) {
   const params = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const { data: notifications } = await supabase.from('notifications').select('id').eq('user_id', user.id).eq('is_read', false)
   const { data: patients } = await supabase.from('profiles').select('id, email').eq('nutritionist_id', user.id)
   const patientIds = patients?.map((p) => p.id) || []
 
@@ -43,11 +44,30 @@ export default async function NutritionistPage({ searchParams }: { searchParams:
   const { data: meals, error } = await query
   if (error) console.error('Error fetching meals:', error)
 
+  let filteredMeals = meals || []
+  if (params.filter === 'pendientes') {
+    filteredMeals = filteredMeals.filter(m => !m.interactions.some((i: any) => i.type === 'like' && i.user_id === user.id))
+  } else if (params.filter === 'vistos') {
+    filteredMeals = filteredMeals.filter(m => m.interactions.some((i: any) => i.type === 'like' && i.user_id === user.id))
+  } else if (params.filter === 'favoritos') {
+    filteredMeals = filteredMeals.filter(m => m.interactions.some((i: any) => i.type === 'favorite' && i.user_id === user.id))
+  }
+
   return (
     <div className="min-h-screen bg-zinc-50 pb-24 dark:bg-zinc-950">
       <header className="sticky top-0 z-40 w-full border-b border-zinc-100 bg-white/80 px-6 py-4 backdrop-blur-md dark:border-white/10 dark:bg-zinc-900/80">
-        <div className="mx-auto flex max-w-lg items-center justify-between">
-          <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Nutri-Feed <span className="font-light text-zinc-400">Pro</span></h1>
+        <div className="mx-auto flex max-w-5xl items-center justify-between">
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Nutri-Feed <span className="font-light text-zinc-400">Pro</span></h1>
+            {notifications && notifications.length > 0 && (
+              <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                <MessageSquare size={18} />
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
+                  {notifications.length}
+                </span>
+              </div>
+            )}
+          </div>
           <form action={logout}><button type="submit" className="flex items-center gap-2 rounded-lg p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-red-500 dark:text-zinc-400 dark:hover:bg-zinc-800" title="Cerrar Sesión"><LogOut size={20} /></button></form>
         </div>
       </header>
@@ -86,24 +106,30 @@ export default async function NutritionistPage({ searchParams }: { searchParams:
           </aside>
 
           <div className="flex-1 space-y-8">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
                 {params.patientId 
                   ? `Diario: ${patients?.find(p => p.id === params.patientId)?.email.split('@')[0]}`
                   : 'Feed de Actividad Global'
                 }
               </h2>
-              <div className="h-2 w-2 rounded-full animate-pulse bg-emerald-500"></div>
+              
+              <div className="flex items-center gap-1 rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900">
+                <a href={`/nutritionist${params.patientId ? `?patientId=${params.patientId}` : ''}`} className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${!params.filter ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-900'}`}>Todos</a>
+                <a href={`/nutritionist?filter=pendientes${params.patientId ? `&patientId=${params.patientId}` : ''}`} className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${params.filter === 'pendientes' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-900'}`}>No Vistos</a>
+                <a href={`/nutritionist?filter=vistos${params.patientId ? `&patientId=${params.patientId}` : ''}`} className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${params.filter === 'vistos' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-900'}`}>Vistos</a>
+                <a href={`/nutritionist?filter=favoritos${params.patientId ? `&patientId=${params.patientId}` : ''}`} className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${params.filter === 'favoritos' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-900'}`}>Favoritos</a>
+              </div>
             </div>
 
             <div className="flex flex-col gap-8">
-              {!meals || meals.length === 0 ? (
-                <div className="mt-10 flex flex-col items-center justify-center text-center">
+              {!filteredMeals || filteredMeals.length === 0 ? (
+                <div className="mt-10 flex flex-col items-center justify-center text-center text-zinc-500">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-900"><Search size={24} className="text-zinc-300" /></div>
-                  <p className="mt-4 text-zinc-500 dark:text-zinc-400">No hay registros aún para esta selección.</p>
+                  <p className="mt-4">No hay resultados para este filtro.</p>
                 </div>
               ) : (
-                meals.map((meal) => <NutritionistMealCard key={meal.id} meal={meal} interactions={meal.interactions} />)
+                filteredMeals.map((meal) => <NutritionistMealCard key={meal.id} meal={meal} interactions={meal.interactions} currentUserId={user.id} />)
               )}
             </div>
           </div>
