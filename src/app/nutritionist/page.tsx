@@ -2,7 +2,8 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { NutritionistMealCard } from './components/NutritionistMealCard'
 import { logout } from '@/app/auth/actions'
-import { LogOut, Users, Search } from 'lucide-react'
+import { LogOut, Users, Search, Activity, MessageSquare, Heart } from 'lucide-react'
+import { PatientList } from './components/PatientList'
 
 export default async function NutritionistPage({ searchParams }: { searchParams: { patientId?: string } }) {
   const params = await searchParams
@@ -12,6 +13,29 @@ export default async function NutritionistPage({ searchParams }: { searchParams:
 
   const { data: patients } = await supabase.from('profiles').select('id, email').eq('nutritionist_id', user.id)
   const patientIds = patients?.map((p) => p.id) || []
+
+  // Fetch meals with interactions to calculate stats
+  const { data: mealsData } = await supabase
+    .from('meals')
+    .select('id, patient_id, meal_date, interactions(type)')
+    .in('patient_id', patientIds)
+
+  const patientStats = patientIds.map(pid => {
+    const patientMeals = mealsData?.filter(m => m.patient_id === pid) || []
+    const pendingCount = patientMeals.filter(m => !m.interactions.some((i: any) => i.type === 'comment')).length
+    const lastMeal = patientMeals.length > 0 
+      ? patientMeals.sort((a, b) => new Date(b.meal_date).getTime() - new Date(a.meal_date).getTime())[0].meal_date 
+      : null
+    
+    return {
+      id: pid,
+      email: patients?.find(p => p.id === pid)?.email || '',
+      last_meal_date: lastMeal,
+      pending_feedback_count: pendingCount
+    }
+  })
+
+  const totalPending = patientStats.reduce((acc, curr) => acc + curr.pending_feedback_count, 0)
 
   let query = supabase.from('meals').select('*, patient:profiles!meals_patient_id_fkey(id, email), interactions(*)').in('patient_id', patientIds).order('meal_date', { ascending: false })
   if (params.patientId) query = query.eq('patient_id', params.patientId)
@@ -27,27 +51,62 @@ export default async function NutritionistPage({ searchParams }: { searchParams:
           <form action={logout}><button type="submit" className="flex items-center gap-2 rounded-lg p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-red-500 dark:text-zinc-400 dark:hover:bg-zinc-800" title="Cerrar Sesión"><LogOut size={20} /></button></form>
         </div>
       </header>
-      <main className="mx-auto max-w-lg px-6 py-8">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h2 className="flex items-center gap-2 text-lg font-semibold text-zinc-800 dark:text-zinc-200"><Users size={20} className="text-blue-500" /> Feed de Pacientes</h2>
-            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Monitorea los registros de tus {patients?.length || 0} pacientes.</p>
+      <main className="mx-auto max-w-5xl px-6 py-8">
+        {/* Dashboard Stats */}
+        <div className="mb-10 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-white/10">
+            <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400"><Users size={16} /><span className="text-[10px] font-bold uppercase tracking-wider">Pacientes</span></div>
+            <p className="mt-1 text-2xl font-bold text-zinc-900 dark:text-zinc-50">{patients?.length || 0}</p>
+          </div>
+          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-white/10">
+            <div className="flex items-center gap-2 text-blue-500"><MessageSquare size={16} /><span className="text-[10px] font-bold uppercase tracking-wider">Pendientes</span></div>
+            <p className="mt-1 text-2xl font-bold text-blue-600">{totalPending}</p>
+          </div>
+          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-white/10">
+            <div className="flex items-center gap-2 text-emerald-500"><Activity size={16} /><span className="text-[10px] font-bold uppercase tracking-wider">Registros Hoy</span></div>
+            <p className="mt-1 text-2xl font-bold text-emerald-600">
+              {mealsData?.filter(m => new Date(m.meal_date).toDateString() === new Date().toDateString()).length || 0}
+            </p>
+          </div>
+          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-white/10">
+            <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400"><Heart size={16} /><span className="text-[10px] font-bold uppercase tracking-wider">Mi Email</span></div>
+            <p className="mt-2 text-[10px] font-medium text-zinc-400 truncate">{user.email}</p>
           </div>
         </div>
-        <div className="mb-8 flex flex-wrap gap-2">
-          <a href="/nutritionist" className={`rounded-full px-4 py-2 text-xs font-semibold ${!params.patientId ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400'}`}>Todos</a>
-          {patients?.map((p) => (
-            <a key={p.id} href={`/nutritionist?patientId=${p.id}`} className={`rounded-full px-4 py-2 text-xs font-semibold ${params.patientId === p.id ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400'}`}>{p.email.split('@')[0]}</a>
-          ))}
-        </div>
-        <div className="flex flex-col gap-8">
-          {!meals || meals.length === 0 ? (
-            <div className="mt-10 flex flex-col items-center justify-center text-center">
-              <Search size={32} className="text-zinc-300" /><p className="mt-4 text-zinc-500 dark:text-zinc-400">No hay registros.</p>
+
+        <div className="flex flex-col gap-10 lg:flex-row">
+          <aside className="w-full lg:w-80">
+            <div className="sticky top-24">
+              <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-zinc-400">Panel de Pacientes</h3>
+              <PatientList 
+                patients={patientStats} 
+                selectedId={params.patientId} 
+              />
             </div>
-          ) : (
-            meals.map((meal) => <NutritionistMealCard key={meal.id} meal={meal} interactions={meal.interactions} />)
-          )}
+          </aside>
+
+          <div className="flex-1 space-y-8">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
+                {params.patientId 
+                  ? `Diario: ${patients?.find(p => p.id === params.patientId)?.email.split('@')[0]}`
+                  : 'Feed de Actividad Global'
+                }
+              </h2>
+              <div className="h-2 w-2 rounded-full animate-pulse bg-emerald-500"></div>
+            </div>
+
+            <div className="flex flex-col gap-8">
+              {!meals || meals.length === 0 ? (
+                <div className="mt-10 flex flex-col items-center justify-center text-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-900"><Search size={24} className="text-zinc-300" /></div>
+                  <p className="mt-4 text-zinc-500 dark:text-zinc-400">No hay registros aún para esta selección.</p>
+                </div>
+              ) : (
+                meals.map((meal) => <NutritionistMealCard key={meal.id} meal={meal} interactions={meal.interactions} />)
+              )}
+            </div>
+          </div>
         </div>
       </main>
     </div>

@@ -4,6 +4,7 @@ import { MealCard } from './components/MealCard'
 import { NewMealForm } from './components/NewMealForm'
 import { logout } from '@/app/auth/actions'
 import { LogOut, Calendar } from 'lucide-react'
+import { NutritionistConnect } from './components/NutritionistConnect'
 
 export default async function PatientDashboard() {
   const supabase = await createClient()
@@ -12,6 +13,13 @@ export default async function PatientDashboard() {
 
   const { data: meals, error } = await supabase.from('meals').select('*, interactions(*)').eq('patient_id', user.id).order('meal_date', { ascending: false })
   if (error) console.error('Error fetching meals:', error)
+
+  const { data: profile } = await supabase.from('profiles').select('nutritionist_id').eq('id', user.id).single()
+  let nutritionistEmail = null
+  if (profile?.nutritionist_id) {
+    const { data: nutri } = await supabase.from('profiles').select('email').eq('id', profile.nutritionist_id).single()
+    nutritionistEmail = nutri?.email
+  }
 
   const isWithin24Hours = (date: string) => {
     const diff = (new Date().getTime() - new Date(date).getTime()) / (1000 * 60 * 60)
@@ -42,6 +50,8 @@ export default async function PatientDashboard() {
             meals.map((meal) => <MealCard key={meal.id} meal={meal} isEditable={isWithin24Hours(meal.meal_date || meal.created_at)} />)
           )}
         </div>
+        
+        <NutritionistConnect currentNutriEmail={nutritionistEmail} />
       </main>
       <NewMealForm />
     </div>

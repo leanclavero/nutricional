@@ -53,3 +53,26 @@ export async function updateMeal(mealId: string, comments: string, mealType: str
   if (error) throw new Error(`Update failed: ${error.message}`)
   revalidatePath('/patient')
 }
+
+export async function connectNutritionist(email: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { data: nutri, error: nutriError } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('email', email)
+    .eq('role', 'nutritionist')
+    .single()
+
+  if (nutriError || !nutri) throw new Error('Nutricionista no encontrado con ese email')
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ nutritionist_id: nutri.id })
+    .eq('id', user.id)
+
+  if (error) throw new Error(`Error vinculando: ${error.message}`)
+  revalidatePath('/patient')
+}

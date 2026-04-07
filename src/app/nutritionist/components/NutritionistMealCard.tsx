@@ -30,6 +30,7 @@ export function NutritionistMealCard({ meal, interactions }: NutritionistMealCar
 
   const likes = interactions.filter((i) => i.type === 'like')
   const nutritionistComments = interactions.filter((i) => i.type === 'comment')
+  const isPending = nutritionistComments.length === 0
 
   const handleLike = async () => {
     const formData = new FormData()
@@ -58,6 +59,12 @@ export function NutritionistMealCard({ meal, interactions }: NutritionistMealCar
       <div className="relative aspect-square w-full">
         {meal.photo_urls[0] ? <img src={meal.photo_urls[0]} alt={meal.meal_type} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center bg-zinc-100 dark:bg-zinc-800"><span className="text-sm text-zinc-400">Sin foto</span></div>}
         <div className="absolute top-4 left-4 rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-white backdrop-blur-md">{meal.meal_type}</div>
+        {isPending && (
+          <div className="absolute top-4 right-4 flex items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1 text-[10px] font-bold text-white shadow-lg shadow-blue-500/40">
+            <div className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+            PENDIENTE
+          </div>
+        )}
       </div>
       <div className="p-4">
         {meal.comments && <p className="mb-4 text-sm text-zinc-700 dark:text-zinc-300 italic">"{meal.comments}"</p>}
