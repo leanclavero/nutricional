@@ -1,122 +1,138 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  --background: 210 40% 98%;
-  --foreground: 222 47% 11%;
-  
-  --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
- 
-  --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
- 
-  --primary: 199 89% 48%; /* Clinical Sky Blue */
-  --primary-foreground: 210 40% 98%;
- 
-  --secondary: 215 25% 27%;
-  --secondary-foreground: 210 40% 98%;
- 
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
- 
-  --accent: 199 89% 48%;
-  --accent-foreground: 222 47% 11%;
- 
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
+@theme {
+  /* ── Fonts ── */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-outfit: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
 
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 199 89% 48%;
- 
+  /* ── Color palette: Clinical Sky Blue ── */
+  --color-background: oklch(98% 0.01 220);
+  --color-foreground: oklch(20% 0.04 255);
+
+  --color-card: oklch(100% 0 0);
+  --color-card-foreground: oklch(20% 0.04 255);
+
+  --color-primary: oklch(60% 0.18 220);
+  --color-primary-foreground: oklch(98% 0.01 220);
+
+  --color-secondary: oklch(35% 0.05 255);
+  --color-secondary-foreground: oklch(98% 0.01 220);
+
+  --color-muted: oklch(96% 0.01 220);
+  --color-muted-foreground: oklch(55% 0.04 255);
+
+  --color-accent: oklch(60% 0.18 220);
+  --color-accent-foreground: oklch(20% 0.04 255);
+
+  --color-destructive: oklch(60% 0.22 25);
+  --color-destructive-foreground: oklch(98% 0.01 220);
+
+  --color-border: oklch(92% 0.02 220);
+  --color-input: oklch(92% 0.02 220);
+  --color-ring: oklch(60% 0.18 220);
+
+  /* Clinical semantic */
+  --color-pending: oklch(75% 0.18 80);
+  --color-success: oklch(55% 0.2 160);
+  --color-favorite: oklch(65% 0.22 5);
+
+  /* ── Radius ── */
   --radius: 0.75rem;
-
-  /* Custom Clinical semantic colors */
-  --clinical-bg: 210 100% 99%;
-  --pending: 38 92% 50%;
-  --success: 160 84% 39%;
-  --favorite: 346 84% 61%;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
-.dark {
-  --background: 222 47% 6%;
-  --foreground: 210 40% 98%;
- 
-  --card: 222 47% 11%;
-  --card-foreground: 210 40% 98%;
- 
-  --popover: 222 47% 11%;
-  --popover-foreground: 210 40% 98%;
- 
-  --primary: 199 89% 48%;
-  --primary-foreground: 222 47% 11%;
- 
-  --secondary: 217.2 32.6% 17.5%;
-  --secondary-foreground: 210 40% 98%;
- 
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
- 
-  --accent: 217.2 32.6% 17.5%;
-  --accent-foreground: 210 40% 98%;
- 
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 210 40% 98%;
- 
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 199 89% 48%;
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
-  }
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-outfit tracking-tight;
+/* ── Dark mode overrides ── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: oklch(12% 0.04 255);
+    --color-foreground: oklch(98% 0.01 220);
+    --color-card: oklch(18% 0.04 255);
+    --color-card-foreground: oklch(98% 0.01 220);
+    --color-muted: oklch(22% 0.04 255);
+    --color-muted-foreground: oklch(65% 0.05 255);
+    --color-border: oklch(25% 0.04 255);
+    --color-input: oklch(25% 0.04 255);
   }
 }
 
-@layer components {
-  .glass {
-    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-xl;
-  }
-  
-  .glass-dark {
-    @apply bg-slate-900/70 backdrop-blur-md border border-slate-700/30 shadow-2xl;
-  }
-
-  .glass-morphism {
-    @apply relative overflow-hidden transition-all duration-300;
-  }
-
-  .glass-morphism::before {
-    content: "";
-    @apply absolute inset-0 -z-10 bg-gradient-to-br from-white/10 to-transparent opacity-0 transition-opacity duration-300;
-  }
-
-  .glass-morphism:hover::before {
-    @apply opacity-100;
-  }
-
-  /* Custom Scrollbar for Premium Look */
-  ::-webkit-scrollbar {
-    width: 6px;
-  }
-  ::-webkit-scrollbar-track {
-    @apply bg-transparent;
-  }
-  ::-webkit-scrollbar-thumb {
-    @apply bg-slate-300/50 rounded-full hover:bg-slate-400/50 transition-colors;
-  }
+/* ── Base styles ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  border-color: var(--color-border);
 }
 
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  font-feature-settings: "rlig" 1, "calt" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-outfit);
+  letter-spacing: -0.025em;
+}
+
+/* ── Glass components ── */
+.glass {
+  background: rgb(255 255 255 / 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgb(255 255 255 / 0.2);
+  box-shadow: 0 20px 40px rgb(0 0 0 / 0.1);
+}
+
+.glass-dark {
+  background: rgb(15 23 42 / 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgb(51 65 85 / 0.3);
+  box-shadow: 0 25px 50px rgb(0 0 0 / 0.15);
+}
+
+.glass-morphism {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s;
+}
+
+.glass-morphism::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -10;
+  background: linear-gradient(135deg, rgb(255 255 255 / 0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.glass-morphism:hover::before {
+  opacity: 1;
+}
+
+/* ── Custom Scrollbar ── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(148 163 184 / 0.5);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(148 163 184 / 0.7);
+}
+
+/* ── Animations ── */
 .animate-pulse-subtle {
   animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
