@@ -1,13 +1,16 @@
 'use client'
 
 import React, { useState, useRef } from 'react'
-import { Camera, X, Plus, Calendar, Type, CheckCircle2 } from 'lucide-react'
+import { Camera, X, Calendar, Type, CheckCircle2 } from 'lucide-react'
 import { createMeal } from '@/app/patient/actions'
 import { motion, AnimatePresence } from 'framer-motion'
-import { cn } from '@/lib/utils'
 
-export function NewMealForm() {
-  const [isOpen, setIsOpen] = useState(false)
+interface NewMealFormProps {
+  isOpen: boolean
+  onClose: () => void
+}
+
+export function NewMealForm({ isOpen, onClose }: NewMealFormProps) {
   const [preview, setPreview] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -42,6 +45,11 @@ export function NewMealForm() {
     })
   }
 
+  const handleClose = () => {
+    setPreview(null)
+    onClose()
+  }
+
   const handleSubmit = async (formData: FormData) => {
     setIsUploading(true)
     try {
@@ -51,8 +59,7 @@ export function NewMealForm() {
         formData.set('photo', compressedBlob, 'meal.jpg')
       }
       await createMeal(formData)
-      setIsOpen(false)
-      setPreview(null)
+      handleClose()
     } catch (err) {
       console.error(err)
       alert('Error al guardar. Inténtalo de nuevo.')
@@ -62,164 +69,153 @@ export function NewMealForm() {
   }
 
   return (
-    <>
-      <motion.button 
-        initial={{ scale: 0, boxShadow: '0 0 0 rgba(0,0,0,0)' }}
-        animate={{ scale: 1, boxShadow: '0 20px 40px rgba(14, 165, 233, 0.4)' }}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        onClick={() => setIsOpen(true)} 
-        className="fixed bottom-8 right-8 z-50 flex h-16 w-16 items-center justify-center rounded-3xl bg-sky-500 text-white shadow-2xl transition-all"
-      >
-        <Plus size={32} strokeWidth={2.5} />
-      </motion.button>
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center p-4 sm:items-center">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={handleClose}
+            className="absolute inset-0 bg-zinc-950/40 backdrop-blur-md"
+          />
 
-      <AnimatePresence>
-        {isOpen && (
-          <div className="fixed inset-0 z-[100] flex items-end justify-center p-4 sm:items-center">
-            {/* Backdrop */}
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsOpen(false)}
-              className="absolute inset-0 bg-zinc-950/40 backdrop-blur-md"
-            />
-
-            {/* Modal */}
-            <motion.div 
-              initial={{ y: '100%', opacity: 0, scale: 0.95 }}
-              animate={{ y: 0, opacity: 1, scale: 1 }}
-              exit={{ y: '100%', opacity: 0, scale: 0.95 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-lg overflow-hidden rounded-[2.5rem] bg-white shadow-2xl dark:bg-zinc-900"
-            >
-              <div className="absolute top-0 right-0 p-6 z-10">
-                <button 
-                  onClick={() => setIsOpen(false)} 
-                  className="flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400"
-                >
-                  <X size={20} />
-                </button>
+          {/* Modal */}
+          <motion.div
+            initial={{ y: '100%', opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: '100%', opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-zinc-900"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 pt-5 pb-4">
+              <div>
+                <h2 className="font-outfit text-xl font-black tracking-tight text-zinc-900 dark:text-zinc-50">
+                  Registrar Comida
+                </h2>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                  Captura tu momento nutricional
+                </p>
               </div>
+              <button
+                onClick={handleClose}
+                className="flex h-9 w-9 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400"
+              >
+                <X size={18} />
+              </button>
+            </div>
 
-              <div className="p-8">
-                <div className="mb-8">
-                  <h2 className="font-outfit text-2xl font-black tracking-tight text-zinc-900 dark:text-zinc-50">Loguear Comida</h2>
-                  <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">Captura tu momento nutricional</p>
+            <div className="px-6 pb-6">
+              <form action={handleSubmit} className="space-y-4">
+                {/* Image Upload Area */}
+                <div className="relative">
+                  {preview ? (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-zinc-100 dark:bg-zinc-800"
+                    >
+                      <img src={preview} alt="Vista previa" className="h-full w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setPreview(null)}
+                        className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-2xl bg-black/50 text-white backdrop-blur-md transition hover:bg-black/70"
+                      >
+                        <X size={18} />
+                      </button>
+                    </motion.div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-zinc-200 bg-zinc-50 text-zinc-400 transition-all hover:border-sky-400 hover:bg-sky-50 dark:border-zinc-800 dark:bg-zinc-950"
+                    >
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm dark:bg-zinc-900">
+                        <Camera size={24} className="text-sky-500" />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs font-bold text-zinc-600 dark:text-zinc-300">Tocar para fotografiar</p>
+                        <p className="text-[10px] text-zinc-400">La foto es clave para tu nutricionista</p>
+                      </div>
+                    </button>
+                  )}
+                  <input
+                    type="file"
+                    name="photo"
+                    ref={fileInputRef}
+                    onChange={handleImageChange}
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    required
+                  />
                 </div>
 
-                <form action={handleSubmit} className="space-y-8">
-                  {/* Image Upload Area */}
-                  <div className="relative">
-                    {preview ? (
-                      <motion.div 
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="relative aspect-square w-full overflow-hidden rounded-[2rem] bg-zinc-100 ring-4 ring-zinc-50 dark:bg-zinc-800 dark:ring-zinc-900"
-                      >
-                        <img src={preview} alt="Vista previa" className="h-full w-full object-cover" />
-                        <button 
-                          type="button" 
-                          onClick={() => setPreview(null)} 
-                          className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-2xl bg-black/50 text-white backdrop-blur-md transition hover:bg-black/70"
-                        >
-                          <X size={20} />
-                        </button>
-                      </motion.div>
-                    ) : (
-                      <button 
-                        type="button" 
-                        onClick={() => fileInputRef.current?.click()} 
-                        className="flex aspect-square w-full flex-col items-center justify-center gap-4 rounded-[2rem] border-4 border-dashed border-zinc-100 bg-zinc-50 text-zinc-400 transition-all hover:border-sky-500 hover:bg-sky-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-sky-400/50"
-                      >
-                        <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-white shadow-lg dark:bg-zinc-900">
-                          <Camera size={32} className="text-sky-500" />
-                        </div>
-                        <div className="text-center">
-                          <p className="text-sm font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-300">Tocar para Fotografiar</p>
-                          <p className="text-[10px] font-bold text-zinc-400">El registro visual es clave para tu nutricionista</p>
-                        </div>
-                      </button>
-                    )}
-                    <input 
-                      type="file" 
-                      name="photo" 
-                      ref={fileInputRef} 
-                      onChange={handleImageChange} 
-                      accept="image/*" 
-                      capture="environment"
-                      className="hidden" 
-                      required 
+                {/* Form Fields */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-zinc-400 px-1">
+                      <CheckCircle2 size={10} className="text-sky-500" /> Momento
+                    </label>
+                    <select
+                      name="mealType"
+                      required
+                      className="w-full rounded-xl border-none bg-zinc-50 px-3 py-2.5 text-xs font-bold ring-1 ring-zinc-200 focus:bg-white focus:ring-2 focus:ring-sky-500 dark:bg-zinc-950 dark:text-zinc-50 dark:ring-zinc-800"
+                    >
+                      <option value="Desayuno">Desayuno</option>
+                      <option value="Almuerzo">Almuerzo</option>
+                      <option value="Merienda">Merienda</option>
+                      <option value="Cena">Cena</option>
+                      <option value="Snack">Snack</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-zinc-400 px-1">
+                      <Calendar size={10} className="text-sky-500" /> Fecha y Hora
+                    </label>
+                    <input
+                      type="datetime-local"
+                      name="mealDate"
+                      defaultValue={new Date().toISOString().slice(0, 16)}
+                      required
+                      className="w-full rounded-xl border-none bg-zinc-50 px-3 py-2.5 text-xs font-bold ring-1 ring-zinc-200 focus:bg-white focus:ring-2 focus:ring-sky-500 dark:bg-zinc-950 dark:text-zinc-50 dark:ring-zinc-800"
                     />
                   </div>
+                </div>
 
-                  {/* Form Fields */}
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 px-1">
-                          <CheckCircle2 size={12} className="text-sky-500" /> Momento
-                        </label>
-                        <select 
-                          name="mealType" 
-                          required 
-                          className="w-full rounded-2xl border-none bg-zinc-50 px-4 py-3 text-xs font-bold ring-1 ring-zinc-200 focus:bg-white focus:ring-2 focus:ring-sky-500 dark:bg-zinc-950 dark:text-zinc-50 dark:ring-zinc-800"
-                        >
-                          <option value="Desayuno">Desayuno</option>
-                          <option value="Almuerzo">Almuerzo</option>
-                          <option value="Merienda">Merienda</option>
-                          <option value="Cena">Cena</option>
-                          <option value="Snack">Snack</option>
-                        </select>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 px-1">
-                          <Calendar size={12} className="text-sky-500" /> Fecha y Hora
-                        </label>
-                        <input 
-                          type="datetime-local" 
-                          name="mealDate" 
-                          defaultValue={new Date().toISOString().slice(0, 16)}
-                          required 
-                          className="w-full rounded-2xl border-none bg-zinc-50 px-4 py-3 text-xs font-bold ring-1 ring-zinc-200 focus:bg-white focus:ring-2 focus:ring-sky-500 dark:bg-zinc-950 dark:text-zinc-50 dark:ring-zinc-800"
-                        />
-                      </div>
-                    </div>
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-zinc-400 px-1">
+                    <Type size={10} className="text-sky-500" /> Notas (opcional)
+                  </label>
+                  <textarea
+                    name="comments"
+                    rows={2}
+                    placeholder="Ej: Pollo con ensalada y palta..."
+                    className="w-full resize-none rounded-xl border-none bg-zinc-50 px-3 py-2.5 text-xs font-medium ring-1 ring-zinc-200 focus:bg-white focus:ring-2 focus:ring-sky-500 dark:bg-zinc-950 dark:text-zinc-50 dark:ring-zinc-800"
+                  />
+                </div>
 
-                    <div className="space-y-2">
-                      <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 px-1">
-                        <Type size={12} className="text-sky-500" /> Notas
-                      </label>
-                      <textarea 
-                        name="comments" 
-                        rows={3} 
-                        placeholder="Por ejemplo: Pollo con ensalada y palta..." 
-                        className="w-full resize-none rounded-2xl border-none bg-zinc-50 px-4 py-3 text-xs font-medium ring-1 ring-zinc-200 focus:bg-white focus:ring-2 focus:ring-sky-500 dark:bg-zinc-950 dark:text-zinc-50 dark:ring-zinc-800" 
-                      />
-                    </div>
-                  </div>
-
-                  <button 
-                    type="submit" 
-                    disabled={isUploading} 
-                    className="group relative flex w-full items-center justify-center overflow-hidden rounded-[1.5rem] bg-sky-500 py-4 text-sm font-black uppercase tracking-widest text-white shadow-2xl shadow-sky-500/30 transition-all hover:bg-sky-600 disabled:opacity-50"
-                  >
-                    <motion.div 
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
-                      animate={{ x: ['-100%', '200%'] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                    />
-                    <span className="relative z-10 flex items-center gap-2">
-                      {isUploading ? 'Procesando...' : 'Guardar Comida'}
-                    </span>
-                  </button>
-                </form>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-    </>
+                <button
+                  type="submit"
+                  disabled={isUploading}
+                  className="relative flex w-full items-center justify-center overflow-hidden rounded-2xl bg-sky-500 py-3.5 text-sm font-black uppercase tracking-widest text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-600 disabled:opacity-50"
+                >
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                    animate={{ x: ['-100%', '200%'] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                  />
+                  <span className="relative z-10">
+                    {isUploading ? 'Procesando...' : 'Guardar Comida'}
+                  </span>
+                </button>
+              </form>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   )
 }
