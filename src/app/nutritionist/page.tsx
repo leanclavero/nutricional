@@ -4,6 +4,8 @@ import { NutritionistMealCard } from './components/NutritionistMealCard'
 import { logout } from '@/app/auth/actions'
 import { LogOut, Users, Search, Activity, MessageSquare, Heart } from 'lucide-react'
 import { PatientList } from './components/PatientList'
+import { FilterTabs } from './components/FilterTabs'
+import { NutritionistFeed } from './components/NutritionistFeed'
 
 export default async function NutritionistPage({ searchParams }: { searchParams: { patientId?: string, filter?: 'vistos' | 'pendientes' | 'favoritos' } }) {
   const params = await searchParams
@@ -15,17 +17,29 @@ export default async function NutritionistPage({ searchParams }: { searchParams:
   const { data: patients } = await supabase.from('profiles').select('id, email').eq('nutritionist_id', user.id)
   const patientIds = patients?.map((p) => p.id) || []
 
-  // Fetch meals with interactions to calculate stats
+  // Optimize stats: only fetch meals from last 15 days for the sidebar counts
+  const fifteenDaysAgo = new Date()
+  fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15)
+
   const { data: mealsData } = await supabase
     .from('meals')
     .select('id, patient_id, meal_date, interactions(type)')
     .in('patient_id', patientIds)
+    .gt('meal_date', fifteenDaysAgo.toISOString())
+
+  // Efficiently group meals by patient
+  const mealsByPatient: Record<string, any[]> = {}
+  mealsData?.forEach((m: any) => {
+    if (!mealsByPatient[m.patient_id]) mealsByPatient[m.patient_id] = []
+    mealsByPatient[m.patient_id].push(m)
+  })
 
   const patientStats = patientIds.map(pid => {
-    const patientMeals = mealsData?.filter(m => m.patient_id === pid) || []
-    const pendingCount = patientMeals.filter(m => !m.interactions.some((i: any) => i.type === 'comment')).length
-    const lastMeal = patientMeals.length > 0 
-      ? patientMeals.sort((a, b) => new Date(b.meal_date).getTime() - new Date(a.meal_date).getTime())[0].meal_date 
+    const pMeals = mealsByPatient[pid] || []
+    // A meal is pending if it DOES NOT have a 'like' (visto) from the nutritionist
+    const pendingCount = pMeals.filter(m => !m.interactions.some((i: any) => i.type === 'like')).length
+    const lastMeal = pMeals.length > 0 
+      ? pMeals.reduce((prev, curr) => new Date(curr.meal_date) > new Date(prev.meal_date) ? curr : prev).meal_date
       : null
     
     return {
@@ -38,20 +52,16 @@ export default async function NutritionistPage({ searchParams }: { searchParams:
 
   const totalPending = patientStats.reduce((acc, curr) => acc + curr.pending_feedback_count, 0)
 
-  let query = supabase.from('meals').select('*, patient:profiles!meals_patient_id_fkey(id, email), interactions(*)').in('patient_id', patientIds).order('meal_date', { ascending: false })
+  let query = supabase
+    .from('meals')
+    .select('*, patient:profiles!meals_patient_id_fkey(id, email), interactions(*)')
+    .in('patient_id', patientIds)
+    .order('meal_date', { ascending: false })
+    .limit(50) // Pagination: Only show top 50
   if (params.patientId) query = query.eq('patient_id', params.patientId)
 
   const { data: meals, error } = await query
   if (error) console.error('Error fetching meals:', error)
-
-  let filteredMeals = meals || []
-  if (params.filter === 'pendientes') {
-    filteredMeals = filteredMeals.filter(m => !m.interactions.some((i: any) => i.type === 'like' && i.user_id === user.id))
-  } else if (params.filter === 'vistos') {
-    filteredMeals = filteredMeals.filter(m => m.interactions.some((i: any) => i.type === 'like' && i.user_id === user.id))
-  } else if (params.filter === 'favoritos') {
-    filteredMeals = filteredMeals.filter(m => m.interactions.some((i: any) => i.type === 'favorite' && i.user_id === user.id))
-  }
 
   return (
     <div className="min-h-screen bg-zinc-50 pb-24 dark:bg-zinc-950">
@@ -105,34 +115,13 @@ export default async function NutritionistPage({ searchParams }: { searchParams:
             </div>
           </aside>
 
-          <div className="flex-1 space-y-8">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
-                {params.patientId 
-                  ? `Diario: ${patients?.find(p => p.id === params.patientId)?.email.split('@')[0]}`
-                  : 'Feed de Actividad Global'
-                }
-              </h2>
-              
-              <div className="flex items-center gap-1 rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900">
-                <a href={`/nutritionist${params.patientId ? `?patientId=${params.patientId}` : ''}`} className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${!params.filter ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-900'}`}>Todos</a>
-                <a href={`/nutritionist?filter=pendientes${params.patientId ? `&patientId=${params.patientId}` : ''}`} className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${params.filter === 'pendientes' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-900'}`}>No Vistos</a>
-                <a href={`/nutritionist?filter=vistos${params.patientId ? `&patientId=${params.patientId}` : ''}`} className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${params.filter === 'vistos' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-900'}`}>Vistos</a>
-                <a href={`/nutritionist?filter=favoritos${params.patientId ? `&patientId=${params.patientId}` : ''}`} className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${params.filter === 'favoritos' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-900'}`}>Favoritos</a>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-8">
-              {!filteredMeals || filteredMeals.length === 0 ? (
-                <div className="mt-10 flex flex-col items-center justify-center text-center text-zinc-500">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-900"><Search size={24} className="text-zinc-300" /></div>
-                  <p className="mt-4">No hay resultados para este filtro.</p>
-                </div>
-              ) : (
-                filteredMeals.map((meal) => <NutritionistMealCard key={meal.id} meal={meal} interactions={meal.interactions} currentUserId={user.id} />)
-              )}
-            </div>
-          </div>
+          <NutritionistFeed 
+            initialMeals={meals || []} 
+            currentUserId={user.id} 
+            patientId={params.patientId}
+            initialFilter={params.filter}
+            patients={patients || []}
+          />
         </div>
       </main>
     </div>

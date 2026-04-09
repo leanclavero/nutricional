@@ -34,7 +34,7 @@ export async function toggleInteraction(mealId: string, type: 'like' | 'favorite
     .eq('meal_id', mealId)
     .eq('user_id', user.id)
     .eq('type', type)
-    .single()
+    .maybeSingle()
 
   if (existing) {
     await supabase.from('interactions').delete().eq('id', existing.id)

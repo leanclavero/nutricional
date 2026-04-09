@@ -1,23 +1,127 @@
-@import "tailwindcss";
-
-@theme {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11%;
+  
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+ 
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+ 
+  --primary: 199 89% 48%; /* Clinical Sky Blue */
+  --primary-foreground: 210 40% 98%;
+ 
+  --secondary: 215 25% 27%;
+  --secondary-foreground: 210 40% 98%;
+ 
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+ 
+  --accent: 199 89% 48%;
+  --accent-foreground: 222 47% 11%;
+ 
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 199 89% 48%;
+ 
+  --radius: 0.75rem;
+
+  /* Custom Clinical semantic colors */
+  --clinical-bg: 210 100% 99%;
+  --pending: 38 92% 50%;
+  --success: 160 84% 39%;
+  --favorite: 346 84% 61%;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+.dark {
+  --background: 222 47% 6%;
+  --foreground: 210 40% 98%;
+ 
+  --card: 222 47% 11%;
+  --card-foreground: 210 40% 98%;
+ 
+  --popover: 222 47% 11%;
+  --popover-foreground: 210 40% 98%;
+ 
+  --primary: 199 89% 48%;
+  --primary-foreground: 222 47% 11%;
+ 
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+ 
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+ 
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+ 
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+ 
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 199 89% 48%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-outfit tracking-tight;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .glass {
+    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-xl;
+  }
+  
+  .glass-dark {
+    @apply bg-slate-900/70 backdrop-blur-md border border-slate-700/30 shadow-2xl;
+  }
+
+  .glass-morphism {
+    @apply relative overflow-hidden transition-all duration-300;
+  }
+
+  .glass-morphism::before {
+    content: "";
+    @apply absolute inset-0 -z-10 bg-gradient-to-br from-white/10 to-transparent opacity-0 transition-opacity duration-300;
+  }
+
+  .glass-morphism:hover::before {
+    @apply opacity-100;
+  }
+
+  /* Custom Scrollbar for Premium Look */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-300/50 rounded-full hover:bg-slate-400/50 transition-colors;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
 }

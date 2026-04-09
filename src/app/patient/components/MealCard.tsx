@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { Trash2, Heart, Edit2, X, Check, Calendar, Send } from 'lucide-react'
+import { Trash2, Heart, Edit2, X, Check, Calendar, Send, MessageSquare } from 'lucide-react'
 import { deleteMeal, updateMeal, addPatientComment } from '@/app/patient/actions'
+import { motion, AnimatePresence } from 'framer-motion'
+import { cn } from '@/lib/utils'
 
 interface MealCardProps {
   meal: {
@@ -71,115 +73,156 @@ export function MealCard({ meal, isEditable, currentUserId }: MealCardProps) {
     }
   }
 
+  const isFavorited = meal.interactions?.some(i => i.type === 'favorite')
+  const isSeen = meal.interactions?.some(i => i.type === 'like')
+
   return (
-    <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-md dark:border dark:border-white/10 dark:bg-zinc-900">
-      <div className="relative aspect-square w-full">
+    <motion.div 
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="group relative overflow-hidden rounded-[2.5rem] bg-white shadow-2xl transition-all duration-500 hover:shadow-sky-500/10 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800"
+    >
+      <div className="relative aspect-[4/5] w-full overflow-hidden">
         {meal.photo_urls[0] ? (
-          <img src={meal.photo_urls[0]} alt={meal.meal_type} className="h-full w-full object-cover" />
+          <motion.img 
+            whileHover={{ scale: 1.05 }}
+            transition={{ duration: 0.6 }}
+            src={meal.photo_urls[0]} 
+            alt={meal.meal_type} 
+            className="h-full w-full object-cover" 
+          />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-zinc-100 dark:bg-zinc-800">
-            <span className="text-sm text-zinc-400">Sin foto</span>
+            <span className="text-sm font-black uppercase tracking-widest text-zinc-300">Sin Registro Visual</span>
           </div>
         )}
-        <div className="absolute top-4 left-4 rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-white backdrop-blur-md">
-          {meal.meal_type}
+        
+        {/* Overlay Badges */}
+        <div className="absolute inset-x-0 top-0 flex items-start justify-between p-6">
+          <div className="rounded-2xl bg-white/90 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-zinc-900 shadow-xl backdrop-blur-md dark:bg-zinc-900/90 dark:text-zinc-50">
+            {meal.meal_type}
+          </div>
+          
+          <div className="flex gap-2">
+            {isSeen && (
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20">
+                <Check size={20} />
+              </div>
+            )}
+            {isFavorited && (
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-400 text-white shadow-lg shadow-amber-400/20">
+                <Heart size={20} fill="currentColor" />
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Action Buttons (Hover) */}
+        {isEditable && !isEditing && (
+          <div className="absolute inset-0 flex items-center justify-center gap-4 bg-zinc-900/20 opacity-0 backdrop-blur-[2px] transition-all duration-300 group-hover:opacity-100">
+            <button 
+              onClick={() => setIsEditing(true)}
+              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-sky-600 shadow-xl transition-transform hover:scale-110 active:scale-95 dark:bg-zinc-800 dark:text-sky-400"
+            >
+              <Edit2 size={20} />
+            </button>
+            <button 
+              onClick={handleDelete}
+              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-red-500 shadow-xl transition-transform hover:scale-110 active:scale-95 dark:bg-zinc-800"
+            >
+              <Trash2 size={20} />
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            <Calendar size={12} className="text-zinc-400" />
-            <span>
-              {new Date(meal.meal_date || meal.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-            </span>
-          </div>
-          {isEditable && !isEditing && (
-            <div className="flex gap-2">
-              <button onClick={() => setIsEditing(true)} className="p-1 text-zinc-400 hover:text-blue-500" title="Editar texto">
-                <Edit2 size={16} />
-              </button>
-              <button onClick={handleDelete} className="p-1 text-zinc-400 hover:text-red-500" title="Eliminar">
-                <Trash2 size={16} />
-              </button>
-            </div>
-          )}
+      <div className="p-8">
+        <div className="mb-4 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+          <Calendar size={14} className="text-sky-500" />
+          <span>
+            {new Date(meal.meal_date || meal.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
+          </span>
         </div>
 
-        {isEditing ? (
-          <div className="mt-3 space-y-3">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Comentarios</label>
+        <AnimatePresence mode="wait">
+          {isEditing ? (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="space-y-4"
+            >
               <textarea
-                className="mt-1 w-full rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-900 outline-none focus:border-blue-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+                className="w-full rounded-2xl border-none bg-zinc-50 p-4 text-sm font-medium text-zinc-900 ring-1 ring-zinc-200 focus:ring-2 focus:ring-sky-500 dark:bg-zinc-950 dark:text-zinc-50 dark:ring-zinc-800"
                 rows={3}
                 value={editedComments}
                 onChange={(e) => setEditedComments(e.target.value)}
-                placeholder="¿Qué comiste?"
+                placeholder="Describe tu comida..."
               />
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Día y Hora</label>
-              <input 
-                type="datetime-local" 
-                value={editedMealDate}
-                onChange={(e) => setEditedMealDate(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 outline-none focus:border-blue-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
-              />
-            </div>
-            <div className="mt-2 flex justify-end gap-2">
-              <button onClick={() => setIsEditing(false)} className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800">
-                <X size={16} />
-              </button>
-              <button onClick={handleUpdate} disabled={isUpdating} className="flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
-                <Check size={14} /> Guardar
-              </button>
-            </div>
-          </div>
-        ) : (
-          meal.comments && <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">{meal.comments}</p>
-        )}
-
-        {meal.interactions && meal.interactions.length > 0 && (
-          <div className="mt-4 space-y-3 border-t border-zinc-100 pt-4 dark:border-white/10">
-            {meal.interactions.map((interaction) => (
-              <div key={interaction.id} className="flex flex-col gap-1">
-                {interaction.type === 'like' && (
-                  <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-500">
-                    <Check size={12} />
-                    <span>Tu nutricionista ha visto esta comida</span>
-                  </div>
-                )}
-                {interaction.type === 'comment' && (
-                  <div className={`rounded-xl p-3 text-xs ${interaction.user_id === currentUserId ? 'bg-zinc-100 dark:bg-zinc-800 ml-6 text-zinc-800' : 'bg-blue-50 dark:bg-blue-900/30 mr-6 text-blue-900 dark:text-blue-200'}`}>
-                    <span className="mb-1 block text-[9px] font-black uppercase tracking-tight opacity-50">
-                      {interaction.user_id === currentUserId ? 'Tu mensaje' : 'Feedback Nutricionista'}
-                    </span>
-                    {interaction.content}
-                  </div>
-                )}
+              <div className="flex gap-2">
+                <input 
+                  type="datetime-local" 
+                  value={editedMealDate}
+                  onChange={(e) => setEditedMealDate(e.target.value)}
+                  className="flex-1 rounded-xl border-none bg-zinc-50 px-4 py-2 text-xs font-bold ring-1 ring-zinc-200 focus:ring-2 focus:ring-sky-500 dark:bg-zinc-950 dark:text-zinc-50 dark:ring-zinc-800"
+                />
+                <button onClick={() => setIsEditing(false)} className="rounded-xl bg-zinc-100 p-2 text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800">
+                  <X size={20} />
+                </button>
+                <button onClick={handleUpdate} disabled={isUpdating} className="rounded-xl bg-sky-500 px-4 py-2 text-xs font-black uppercase text-white shadow-lg shadow-sky-500/20">
+                  Guardar
+                </button>
               </div>
-            ))}
-          </div>
-        )}
+            </motion.div>
+          ) : (
+            <motion.p 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-base font-medium leading-relaxed text-zinc-700 dark:text-zinc-300"
+            >
+              {meal.comments || <span className="italic text-zinc-400">Sin descripción</span>}
+            </motion.p>
+          )}
+        </AnimatePresence>
+        
+        {/* Interactions Feed */}
+        <div className="mt-8 space-y-4 border-t border-zinc-50 pt-8 dark:border-white/5">
+          {meal.interactions?.filter(i => i.type === 'comment').map((comment) => (
+            <div key={comment.id} className={cn(
+              "relative rounded-3xl p-4 text-sm shadow-sm transition-all",
+              comment.user_id === currentUserId 
+                ? "ml-8 bg-zinc-50 dark:bg-zinc-800/50" 
+                : "mr-8 bg-sky-50 text-sky-900 ring-1 ring-sky-100 dark:bg-sky-900/20 dark:text-sky-100 dark:ring-sky-500/20"
+            )}>
+              <span className="mb-1 block text-[9px] font-black uppercase tracking-widest opacity-40">
+                {comment.user_id === currentUserId ? 'Tú' : 'Nutricionista'}
+              </span>
+              <p className="font-medium leading-relaxed">{comment.content}</p>
+            </div>
+          ))}
 
-        <form onSubmit={handlePatientComment} className="mt-4 flex items-center gap-2 border-t border-zinc-50 pt-4 dark:border-white/5">
-          <input 
-            type="text" 
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Responder o añadir nota..."
-            className="flex-1 rounded-full border border-zinc-200 bg-zinc-50 px-4 py-2 text-xs outline-none focus:border-blue-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
-          />
-          <button 
-            type="submit" 
-            disabled={isSubmitting || !newComment.trim()}
-            className="rounded-full bg-blue-600 p-2 text-white hover:bg-blue-700 disabled:opacity-50 transition"
-          >
-            <Send size={16} />
-          </button>
-        </form>
+          <form onSubmit={handlePatientComment} className="flex items-center gap-3">
+            <div className="relative flex-1">
+              <MessageSquare size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" />
+              <input 
+                type="text" 
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Escribe un mensaje..."
+                className="w-full rounded-2xl border-none bg-zinc-50 py-3 pl-11 pr-4 text-xs font-medium ring-1 ring-zinc-200 transition-all focus:bg-white focus:ring-2 focus:ring-sky-500 dark:bg-zinc-950 dark:ring-zinc-800"
+              />
+            </div>
+            <button 
+              type="submit" 
+              disabled={isSubmitting || !newComment.trim()}
+              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-500 text-white shadow-lg shadow-sky-500/20 hover:scale-105 active:scale-95 disabled:opacity-50 transition-all"
+            >
+              <Send size={18} />
+            </button>
+          </form>
+        </div>
       </div>
-    </div>
+    </motion.div>
   )
 }

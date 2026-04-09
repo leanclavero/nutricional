@@ -5,6 +5,7 @@ import { User, Calendar, MessageSquare, ChevronRight } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { useRouter } from 'next/navigation'
+import { useTransition } from 'react'
 
 interface Patient {
   id: string
@@ -15,13 +16,16 @@ interface Patient {
 
 export function PatientList({ patients, selectedId }: { patients: Patient[], selectedId?: string | null }) {
   const router = useRouter()
+  const [isPending, startTransition] = useTransition()
   
   const handleSelect = (id: string | null) => {
-    router.push(id ? `/nutritionist?patientId=${id}` : '/nutritionist')
+    startTransition(() => {
+      router.push(id ? `/nutritionist?patientId=${id}` : '/nutritionist')
+    })
   }
 
   return (
-    <div className="space-y-3">
+    <div className={`space-y-3 transition-opacity ${isPending ? 'opacity-50' : ''}`}>
       <button
         onClick={() => handleSelect(null)}
         className={`group flex w-full items-center justify-between overflow-hidden rounded-2xl p-4 transition-all ${
