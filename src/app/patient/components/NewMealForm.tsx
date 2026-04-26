@@ -10,6 +10,14 @@ interface NewMealFormProps {
   onClose: () => void
 }
 
+const getDefaultMealType = () => {
+  const hour = new Date().getHours()
+  if (hour >= 5 && hour < 11) return 'Desayuno'
+  if (hour >= 11 && hour < 16) return 'Almuerzo'
+  if (hour >= 16 && hour < 20) return 'Merienda'
+  return 'Cena'
+}
+
 export function NewMealForm({ isOpen, onClose }: NewMealFormProps) {
   const [preview, setPreview] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -162,6 +170,7 @@ export function NewMealForm({ isOpen, onClose }: NewMealFormProps) {
                     <select
                       name="mealType"
                       required
+                      defaultValue={getDefaultMealType()}
                       className="w-full rounded-xl border-none bg-zinc-50 px-3 py-2.5 text-xs font-bold ring-1 ring-zinc-200 focus:bg-white focus:ring-2 focus:ring-sky-500 dark:bg-zinc-950 dark:text-zinc-50 dark:ring-zinc-800"
                     >
                       <option value="Desayuno">Desayuno</option>
@@ -178,7 +187,7 @@ export function NewMealForm({ isOpen, onClose }: NewMealFormProps) {
                     <input
                       type="datetime-local"
                       name="mealDate"
-                      defaultValue={new Date().toISOString().slice(0, 16)}
+                      defaultValue={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
                       required
                       className="w-full rounded-xl border-none bg-zinc-50 px-3 py-2.5 text-xs font-bold ring-1 ring-zinc-200 focus:bg-white focus:ring-2 focus:ring-sky-500 dark:bg-zinc-950 dark:text-zinc-50 dark:ring-zinc-800"
                     />
