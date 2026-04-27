@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { Heart, MessageCircle, Send, Star, Edit2, Trash2, CheckCircle2, MoreHorizontal } from 'lucide-react'
+import { Heart, MessageCircle, Send, Star, Edit2, Trash2, CheckCircle2, MoreHorizontal, Dumbbell, Utensils } from 'lucide-react'
 import { addInteraction, toggleInteraction, deleteInteraction, updateInteraction } from '@/app/nutritionist/actions'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -106,7 +106,7 @@ export function NutritionistMealCard({ meal, interactions, currentUserId }: Nutr
           </div>
           <div>
             <p className="font-outfit text-sm font-bold text-zinc-900 dark:text-zinc-50">{meal.patient.email}</p>
-            <p className="text-[10px] font-medium tracking-wide text-zinc-400 uppercase">
+            <p className="text-[10px] font-medium tracking-wide text-zinc-400 uppercase" suppressHydrationWarning>
               {new Date(meal.meal_date || meal.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
             </p>
           </div>
@@ -119,8 +119,34 @@ export function NutritionistMealCard({ meal, interactions, currentUserId }: Nutr
       {/* Image Section */}
       <div className="relative aspect-[4/3] w-full px-5">
         <div className="relative h-full w-full overflow-hidden rounded-3xl shadow-inner">
-          {meal.photo_urls[0] ? (
-            <img src={meal.photo_urls[0]} alt={meal.meal_type} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+          {meal.photo_urls.length > 0 ? (
+            <div className={cn(
+              "grid h-full w-full gap-1 bg-white dark:bg-black",
+              meal.photo_urls.length === 1 ? "grid-cols-1" :
+              meal.photo_urls.length === 2 ? "grid-cols-2" :
+              "grid-cols-2 grid-rows-2"
+            )}>
+              {meal.photo_urls.slice(0, 4).map((url, idx) => {
+                const isThirdOfThree = meal.photo_urls.length === 3 && idx === 0;
+                return (
+                  <div key={idx} className={cn(
+                    "relative overflow-hidden",
+                    isThirdOfThree ? "row-span-2" : ""
+                  )}>
+                    <img 
+                      src={url} 
+                      alt={`${meal.meal_type} - Foto ${idx + 1}`} 
+                      className="h-full w-full object-cover transition-transform duration-700 hover:scale-105" 
+                    />
+                    {idx === 3 && meal.photo_urls.length > 4 && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                        <span className="text-xl font-black text-white">+{meal.photo_urls.length - 4}</span>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-zinc-50 dark:bg-zinc-900">
               <span className="font-outfit text-sm font-medium text-zinc-400">Sin registro visual</span>
@@ -129,7 +155,11 @@ export function NutritionistMealCard({ meal, interactions, currentUserId }: Nutr
           
           {/* Status Badges Overlay */}
           <div className="absolute top-4 left-4">
-            <span className="rounded-full bg-black/30 px-3 py-1 text-[10px] font-bold text-white uppercase backdrop-blur-xl border border-white/20">
+            <span className={cn(
+              "flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold text-white uppercase backdrop-blur-xl border border-white/20",
+              meal.meal_type === 'Actividad Física' ? "bg-orange-500/80" : "bg-black/30"
+            )}>
+              {meal.meal_type === 'Actividad Física' ? <Dumbbell size={12} /> : <Utensils size={12} />}
               {meal.meal_type}
             </span>
           </div>

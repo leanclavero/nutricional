@@ -13,15 +13,17 @@ export async function createMeal(formData: FormData) {
   const mealDate = formData.get('mealDate') as string || new Date().toISOString()
   const photoUrls: string[] = []
 
-  const photo = formData.get('photo') as File
-  if (photo && photo.size > 0) {
-    const fileExt = photo.name.split('.').pop()
-    const fileName = `${user.id}-${Date.now()}.${fileExt}`
-    const filePath = `${user.id}/${fileName}`
-    const { error: uploadError } = await supabase.storage.from('meal-photos').upload(filePath, photo)
-    if (uploadError) throw new Error(`Cloud upload failed: ${uploadError.message}`)
-    const { data: { publicUrl } } = supabase.storage.from('meal-photos').getPublicUrl(filePath)
-    photoUrls.push(publicUrl)
+  const photos = formData.getAll('photos') as File[]
+  for (const photo of photos) {
+    if (photo && photo.size > 0) {
+      const fileExt = photo.name.split('.').pop() || 'jpg'
+      const fileName = `${user.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`
+      const filePath = `${user.id}/${fileName}`
+      const { error: uploadError } = await supabase.storage.from('meal-photos').upload(filePath, photo)
+      if (uploadError) throw new Error(`Cloud upload failed: ${uploadError.message}`)
+      const { data: { publicUrl } } = supabase.storage.from('meal-photos').getPublicUrl(filePath)
+      photoUrls.push(publicUrl)
+    }
   }
 
   const { error } = await supabase.from('meals').insert({ 
@@ -43,11 +45,43 @@ export async function deleteMeal(mealId: string) {
   revalidatePath('/patient')
 }
 
-export async function updateMeal(mealId: string, comments: string, mealType: string, mealDate: string) {
+export async function updateMeal(formData: FormData) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('User not authenticated')
+
+  const mealId = formData.get('mealId') as string
+  const comments = formData.get('comments') as string
+  const mealType = formData.get('mealType') as string
+  const mealDate = formData.get('mealDate') as string
+
+  // Fetch current photos to append to
+  const { data: meal, error: fetchError } = await supabase
+    .from('meals')
+    .select('photo_urls')
+    .eq('id', mealId)
+    .single()
+
+  if (fetchError || !meal) throw new Error(`Meal not found: ${fetchError?.message}`)
+
+  const photoUrls: string[] = meal.photo_urls || []
+  const newPhotos = formData.getAll('newPhotos') as File[]
+
+  for (const photo of newPhotos) {
+    if (photo && photo.size > 0) {
+      const fileExt = photo.name.split('.').pop() || 'jpg'
+      const fileName = `${user.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`
+      const filePath = `${user.id}/${fileName}`
+      const { error: uploadError } = await supabase.storage.from('meal-photos').upload(filePath, photo)
+      if (uploadError) throw new Error(`Cloud upload failed: ${uploadError.message}`)
+      const { data: { publicUrl } } = supabase.storage.from('meal-photos').getPublicUrl(filePath)
+      photoUrls.push(publicUrl)
+    }
+  }
+
   const { error } = await supabase
     .from('meals')
-    .update({ comments, meal_type: mealType, meal_date: mealDate })
+    .update({ comments, meal_type: mealType, meal_date: mealDate, photo_urls: photoUrls })
     .eq('id', mealId)
 
   if (error) throw new Error(`Update failed: ${error.message}`)
