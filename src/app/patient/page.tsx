@@ -5,22 +5,59 @@ import { NutritionistConnect } from './components/NutritionistConnect'
 import { DailyProgressBar } from './components/DailyProgressBar'
 import { LastMealCounter } from './components/LastMealCounter'
 import { Calendar, Plus } from 'lucide-react'
+import { cookies } from 'next/headers'
 
 export default async function PatientDashboard() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Adjust to a more generous "today" that accounts for UTC offsets
-  const startOfToday = new Date()
-  startOfToday.setHours(startOfToday.getHours() - 12)
-  startOfToday.setHours(0, 0, 0, 0)
+  // Get user timezone from cookie
+  const cookieStore = await cookies()
+  const userTimezone = cookieStore.get('user-timezone')?.value || 'UTC'
 
-  // Fetch only today's meals
+  // Calculate start of today in user's timezone
+  const now = new Date()
+  let startOfTodayUTC: Date
+
+  try {
+    // This creates a date string in the user's timezone and then parses it as local to find the day boundary
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: userTimezone,
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+      hour12: false
+    })
+    
+    const parts = formatter.formatToParts(now)
+    const p: any = {}
+    parts.forEach(part => { p[part.type] = part.value })
+    
+    // Create a date object that represents 00:00:00 on the current day in the user's timezone
+    const userLocalStart = new Date(`${p.year}-${p.month.padStart(2, '0')}-${p.day.padStart(2, '0')}T00:00:00`)
+    
+    // We need to find the UTC equivalent of that local start
+    // A simple way is to use the difference between now and the formatted now
+    const userNow = new Date(now.toLocaleString('en-US', { timeZone: userTimezone }))
+    const offsetMs = userNow.getTime() - now.getTime()
+    
+    startOfTodayUTC = new Date(userLocalStart.getTime() - offsetMs)
+  } catch (e) {
+    // Fallback to a safer 6-hour window if timezone logic fails
+    startOfTodayUTC = new Date()
+    startOfTodayUTC.setHours(startOfTodayUTC.getHours() - 6)
+    startOfTodayUTC.setHours(0, 0, 0, 0)
+  }
+
+  // Fetch only today's meals using the calculated UTC start
   const { data: todayMeals, error: mealsError } = await supabase.from('meals')
     .select('*, interactions(*)')
     .eq('patient_id', user.id)
-    .gte('meal_date', startOfToday.toISOString())
+    .gte('meal_date', startOfTodayUTC.toISOString())
     .order('meal_date', { ascending: false })
 
   if (mealsError) console.error('Error fetching meals:', mealsError)

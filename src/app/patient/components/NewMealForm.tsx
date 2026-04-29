@@ -93,7 +93,11 @@ export function NewMealForm({ isOpen, onClose }: NewMealFormProps) {
         newFormData.append('mealType', formData.get('mealType') as string)
       }
       
-      newFormData.append('mealDate', formData.get('mealDate') as string)
+      const localDateStr = formData.get('mealDate') as string
+      if (localDateStr) {
+        newFormData.append('mealDate', new Date(localDateStr).toISOString())
+      }
+      
       newFormData.append('comments', comments)
 
       for (const file of files) {
