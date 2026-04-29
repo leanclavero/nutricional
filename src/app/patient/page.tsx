@@ -11,7 +11,9 @@ export default async function PatientDashboard() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  // Adjust to a more generous "today" that accounts for UTC offsets
   const startOfToday = new Date()
+  startOfToday.setHours(startOfToday.getHours() - 12)
   startOfToday.setHours(0, 0, 0, 0)
 
   // Fetch only today's meals
