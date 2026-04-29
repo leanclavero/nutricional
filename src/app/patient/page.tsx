@@ -3,8 +3,7 @@ import { redirect } from 'next/navigation'
 import { MealCard } from './components/MealCard'
 import { NutritionistConnect } from './components/NutritionistConnect'
 import { DailyProgressBar } from './components/DailyProgressBar'
-import { NutritionistInsights } from './components/NutritionistInsights'
-import { PatientShell } from './components/PatientShell'
+import { LastMealCounter } from './components/LastMealCounter'
 import { Calendar, Plus } from 'lucide-react'
 
 export default async function PatientDashboard() {
@@ -24,17 +23,13 @@ export default async function PatientDashboard() {
 
   if (mealsError) console.error('Error fetching meals:', mealsError)
 
-  // Fetch latest 5 interactions for insights
-  const { data: recentInteractions } = await supabase.from('interactions')
-    .select('*, meals!inner(patient_id)')
-    .eq('meals.patient_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(5)
-
-  const insightsData = recentInteractions?.map(i => ({
-    type: i.type as 'like' | 'comment' | 'favorite',
-    content: i.content
-  })) || []
+  // Fetch the absolute last meal for the counter
+  const { data: lastMeal } = await supabase.from('meals')
+    .select('meal_date')
+    .eq('patient_id', user.id)
+    .order('meal_date', { ascending: false })
+    .limit(1)
+    .single()
 
   // Get nutritionist info
   const { data: profile } = await supabase.from('profiles').select('nutritionist_id').eq('id', user.id).single()
@@ -52,7 +47,6 @@ export default async function PatientDashboard() {
   const todayMealsCount = todayMeals?.length || 0
 
   return (
-    <PatientShell>
       <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
         {/* Header */}
         <header className="sticky top-0 z-40 w-full border-b border-zinc-100 bg-white/80 px-4 py-3 backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-900/80">
@@ -70,7 +64,7 @@ export default async function PatientDashboard() {
         <main className="mx-auto max-w-lg space-y-4 px-4 pb-24 pt-4">
           {/* Insights + Progress */}
           <section className="space-y-2.5">
-            <NutritionistInsights interactions={insightsData} />
+            <LastMealCounter lastMealDate={lastMeal?.meal_date || null} />
             <DailyProgressBar current={todayMealsCount} target={4} />
           </section>
 
@@ -117,6 +111,5 @@ export default async function PatientDashboard() {
           </section>
         </main>
       </div>
-    </PatientShell>
   )
 }

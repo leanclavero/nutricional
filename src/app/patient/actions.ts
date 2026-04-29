@@ -19,7 +19,12 @@ export async function createMeal(formData: FormData) {
       const fileExt = photo.name.split('.').pop() || 'jpg'
       const fileName = `${user.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`
       const filePath = `${user.id}/${fileName}`
-      const { error: uploadError } = await supabase.storage.from('meal-photos').upload(filePath, photo)
+      
+      const arrayBuffer = await photo.arrayBuffer()
+      const { error: uploadError } = await supabase.storage.from('meal-photos').upload(filePath, arrayBuffer, {
+        contentType: photo.type || 'image/jpeg'
+      })
+      
       if (uploadError) throw new Error(`Cloud upload failed: ${uploadError.message}`)
       const { data: { publicUrl } } = supabase.storage.from('meal-photos').getPublicUrl(filePath)
       photoUrls.push(publicUrl)
@@ -72,7 +77,12 @@ export async function updateMeal(formData: FormData) {
       const fileExt = photo.name.split('.').pop() || 'jpg'
       const fileName = `${user.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`
       const filePath = `${user.id}/${fileName}`
-      const { error: uploadError } = await supabase.storage.from('meal-photos').upload(filePath, photo)
+      
+      const arrayBuffer = await photo.arrayBuffer()
+      const { error: uploadError } = await supabase.storage.from('meal-photos').upload(filePath, arrayBuffer, {
+        contentType: photo.type || 'image/jpeg'
+      })
+      
       if (uploadError) throw new Error(`Cloud upload failed: ${uploadError.message}`)
       const { data: { publicUrl } } = supabase.storage.from('meal-photos').getPublicUrl(filePath)
       photoUrls.push(publicUrl)
