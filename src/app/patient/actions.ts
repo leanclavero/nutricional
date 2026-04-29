@@ -148,3 +148,18 @@ export async function addPatientComment(mealId: string, content: string) {
   revalidatePath('/patient')
   revalidatePath('/nutritionist')
 }
+
+export async function updateDailyMealsTarget(target: number) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ daily_meals_target: target })
+    .eq('id', user.id)
+
+  if (error) throw new Error(`Error actualizando objetivo: ${error.message}`)
+  revalidatePath('/patient')
+}
+

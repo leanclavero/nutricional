@@ -33,13 +33,14 @@ export default async function PatientDashboard() {
     .limit(1)
     .single()
 
-  // Get nutritionist info
-  const { data: profile } = await supabase.from('profiles').select('nutritionist_id').eq('id', user.id).single()
+  // Get nutritionist info and daily target
+  const { data: profile } = await supabase.from('profiles').select('nutritionist_id, daily_meals_target').eq('id', user.id).single()
   let nutritionistEmail = null
   if (profile?.nutritionist_id) {
     const { data: nutri } = await supabase.from('profiles').select('email').eq('id', profile.nutritionist_id).single()
     nutritionistEmail = nutri?.email
   }
+  const dailyTarget = profile?.daily_meals_target || 4
 
   const isWithin24Hours = (date: string) => {
     const diff = (new Date().getTime() - new Date(date).getTime()) / (1000 * 60 * 60)
@@ -67,7 +68,7 @@ export default async function PatientDashboard() {
           {/* Insights + Progress */}
           <section className="space-y-2.5">
             <LastMealCounter lastMealDate={lastMeal?.meal_date || null} />
-            <DailyProgressBar current={todayMealsCount} target={4} />
+            <DailyProgressBar current={todayMealsCount} target={dailyTarget} />
           </section>
 
           {/* Today's meals */}
