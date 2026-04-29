@@ -15,15 +15,31 @@ export default async function HeatmapPage() {
     .select('meal_date, created_at')
     .eq('patient_id', user.id)
 
-  const hourlyCounts = Array.from({ length: 24 }, (_, hour) => ({ hour, count: 0 }))
+  const cellCounts: { day: number, hour: number, count: number }[] = []
+  
+  for (let d = 0; d < 7; d++) {
+    for (let h = 0; h < 24; h++) {
+      cellCounts.push({ day: d, hour: h, count: 0 })
+    }
+  }
 
   meals?.forEach((meal) => {
     const date = new Date(meal.meal_date || meal.created_at)
+    // Convert to Mon=0, Sun=6
+    const day = (date.getDay() + 6) % 7
     const hour = date.getHours()
-    hourlyCounts[hour].count++
+    
+    const cell = cellCounts.find(c => c.day === day && c.hour === hour)
+    if (cell) cell.count++
   })
 
-  const peakHourData = [...hourlyCounts].sort((a, b) => b.count - a.count)[0]
+  // Hourly counts for the peak hour summary
+  const hourlyTotals = Array.from({ length: 24 }, (_, hour) => ({
+    hour,
+    count: cellCounts.filter(c => c.hour === hour).reduce((acc, curr) => acc + curr.count, 0)
+  }))
+
+  const peakHourData = [...hourlyTotals].sort((a, b) => b.count - a.count)[0]
   const totalRegistrations = meals?.length || 0
 
   return (
@@ -72,7 +88,7 @@ export default async function HeatmapPage() {
             <p className="text-xs text-zinc-500">Visualiza en qué momentos del día sueles registrar tus comidas con mayor frecuencia.</p>
           </div>
           
-          <RegistrationHeatmap data={hourlyCounts} />
+          <RegistrationHeatmap data={cellCounts} />
         </section>
 
         {/* Info Box */}
