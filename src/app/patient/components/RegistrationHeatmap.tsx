@@ -18,12 +18,12 @@ export function RegistrationHeatmap({ data }: RegistrationHeatmapProps) {
   const maxCount = Math.max(...data.map(d => d.count), 1)
 
   const getIntensityClass = (count: number) => {
-    if (count === 0) return 'bg-zinc-100 dark:bg-zinc-800/50 border-transparent'
+    if (count === 0) return 'bg-zinc-100 dark:bg-zinc-800/30 border-transparent'
     const percentage = (count / maxCount) * 100
-    if (percentage < 25) return 'bg-sky-200/50 dark:bg-sky-900/20 border-sky-200/50'
+    if (percentage < 25) return 'bg-sky-200/50 dark:bg-sky-900/20 border-sky-200/30'
     if (percentage < 50) return 'bg-sky-400 dark:bg-sky-700/40 border-sky-400'
     if (percentage < 75) return 'bg-sky-600 border-sky-600'
-    return 'bg-indigo-700 shadow-sm shadow-indigo-500/20 border-indigo-700'
+    return 'bg-indigo-700 shadow-sm shadow-indigo-500/10 border-indigo-700'
   }
 
   const days = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom']
@@ -31,13 +31,13 @@ export function RegistrationHeatmap({ data }: RegistrationHeatmapProps) {
 
   return (
     <div className="flex flex-col space-y-4">
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1">
         
         {/* Header (Days) */}
-        <div className="flex items-center gap-2 pl-10">
+        <div className="flex items-center gap-1 pl-8">
           {days.map((dayName, i) => (
-            <div key={i} className="w-8 flex-shrink-0 text-center">
-              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+            <div key={i} className="w-5 flex-shrink-0 text-center">
+              <span className="text-[8px] font-black uppercase tracking-tighter text-zinc-400">
                 {dayName[0]}
               </span>
             </div>
@@ -46,11 +46,11 @@ export function RegistrationHeatmap({ data }: RegistrationHeatmapProps) {
 
         {/* Rows (Hours) */}
         {hours.map((hour) => (
-          <div key={hour} className="flex items-center gap-2">
+          <div key={hour} className="flex items-center gap-1">
             {/* Hour Label */}
-            <div className="w-8 flex-shrink-0 text-right">
+            <div className="w-8 flex-shrink-0 text-right pr-1">
               <span className={cn(
-                "text-[9px] font-black tabular-nums tracking-tighter text-zinc-300",
+                "text-[7px] font-black tabular-nums tracking-tighter text-zinc-300",
                 hour % 4 === 0 ? "text-zinc-500" : ""
               )}>
                 {hour % 2 === 0 ? hour.toString().padStart(2, '0') : ''}
@@ -58,7 +58,7 @@ export function RegistrationHeatmap({ data }: RegistrationHeatmapProps) {
             </div>
 
             {/* Cells for each Day */}
-            <div className="flex gap-2">
+            <div className="flex gap-1">
               {days.map((_, dayIndex) => {
                 const cellData = data.find(d => d.day === dayIndex && d.hour === hour)
                 const count = cellData?.count || 0
@@ -68,9 +68,9 @@ export function RegistrationHeatmap({ data }: RegistrationHeatmapProps) {
                     key={dayIndex}
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: (hour * 7 + dayIndex) * 0.002 }}
+                    transition={{ delay: (hour * 7 + dayIndex) * 0.001 }}
                     className={cn(
-                      "group relative h-8 w-8 flex-shrink-0 rounded-lg border transition-all hover:z-10 hover:scale-125",
+                      "group relative h-5 w-5 flex-shrink-0 rounded-sm border transition-all hover:z-10 hover:scale-150",
                       getIntensityClass(count)
                     )}
                   >
@@ -87,14 +87,14 @@ export function RegistrationHeatmap({ data }: RegistrationHeatmapProps) {
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-between px-2 pt-4">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Menos activo</span>
-        <div className="flex gap-1.5">
+      <div className="flex items-center justify-between px-2 pt-2 border-t border-zinc-50 dark:border-zinc-800/50">
+        <span className="text-[8px] font-bold uppercase tracking-widest text-zinc-300">Frío</span>
+        <div className="flex gap-1">
           {[0, 25, 50, 75, 100].map((p) => (
             <div 
               key={p} 
               className={cn(
-                "h-2 w-8 rounded-full",
+                "h-1.5 w-4 rounded-full",
                 p === 0 ? 'bg-zinc-200 dark:bg-zinc-800' :
                 p === 25 ? 'bg-sky-200' :
                 p === 50 ? 'bg-sky-400' :
@@ -103,7 +103,7 @@ export function RegistrationHeatmap({ data }: RegistrationHeatmapProps) {
             />
           ))}
         </div>
-        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Más activo</span>
+        <span className="text-[8px] font-bold uppercase tracking-widest text-zinc-300">Caliente</span>
       </div>
     </div>
   )
