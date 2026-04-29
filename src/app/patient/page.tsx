@@ -68,7 +68,7 @@ export default async function PatientDashboard() {
           {/* Insights + Progress */}
           <section className="space-y-2.5">
             <LastMealCounter lastMealDate={lastMeal?.meal_date || null} />
-            <DailyProgressBar current={todayMealsCount} target={dailyTarget} />
+            <DailyProgressBar current={todayMealsCount} target={dailyTarget} meals={todayMeals || []} />
           </section>
 
           {/* Today's meals */}
