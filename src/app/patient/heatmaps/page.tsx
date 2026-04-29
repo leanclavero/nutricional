@@ -61,23 +61,27 @@ export default async function HeatmapPage() {
       <main className="mx-auto max-w-lg p-6 space-y-6">
         {/* Insights Card */}
         <section className="grid grid-cols-2 gap-4">
-          <div className="rounded-3xl bg-white p-5 shadow-sm border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-100 text-orange-500 dark:bg-orange-950/30">
-              <Flame size={20} strokeWidth={2.5} />
+          <div className="flex items-center gap-4 rounded-3xl bg-white p-4 shadow-sm border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-100 text-orange-500 dark:bg-orange-950/30">
+              <Flame size={22} strokeWidth={2.5} />
             </div>
-            <p className="mt-3 text-[10px] font-black uppercase tracking-widest text-zinc-400">Hora Pico</p>
-            <h3 className="font-outfit text-xl font-black text-zinc-900 dark:text-zinc-50">
-              {peakHourData.count > 0 ? `${peakHourData.hour}:00` : '--:--'}
-            </h3>
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Hora Pico</p>
+              <h3 className="font-outfit text-lg font-black text-zinc-900 dark:text-zinc-50">
+                {peakHourData.count > 0 ? `${peakHourData.hour}:00` : '--:--'}
+              </h3>
+            </div>
           </div>
-          <div className="rounded-3xl bg-white p-5 shadow-sm border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-100 text-sky-500 dark:bg-sky-950/30">
-              <TrendingUp size={20} strokeWidth={2.5} />
+          <div className="flex items-center gap-4 rounded-3xl bg-white p-4 shadow-sm border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-sky-500 dark:bg-sky-950/30">
+              <TrendingUp size={22} strokeWidth={2.5} />
             </div>
-            <p className="mt-3 text-[10px] font-black uppercase tracking-widest text-zinc-400">Total</p>
-            <h3 className="font-outfit text-xl font-black text-zinc-900 dark:text-zinc-50">
-              {totalRegistrations} <span className="text-xs font-bold text-zinc-300">comidas</span>
-            </h3>
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Total</p>
+              <h3 className="font-outfit text-lg font-black text-zinc-900 dark:text-zinc-50">
+                {totalRegistrations} <span className="text-[10px] font-bold text-zinc-300">comidas</span>
+              </h3>
+            </div>
           </div>
         </section>
 
