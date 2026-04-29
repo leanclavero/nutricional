@@ -23,7 +23,7 @@ interface PatientMoreDrawerProps {
 
 export function PatientMoreDrawer({ isOpen, onClose }: PatientMoreDrawerProps) {
   const menuItems = [
-    { label: 'Mi Nutri', icon: Stethoscope, href: '/patient#nutri' },
+    { label: 'Mi Nutri', icon: Stethoscope, href: '/patient/nutri' },
     { label: 'Turnos', icon: Calendar, href: '/patient/appointments' },
     { label: 'Heatmaps', icon: Flame, href: '/patient/heatmaps' },
     { label: 'Descargas', icon: Download, href: '/patient/downloads' },
@@ -31,7 +31,7 @@ export function PatientMoreDrawer({ isOpen, onClose }: PatientMoreDrawerProps) {
 
   const configItems = [
     { label: 'Ingestas diarias', icon: ClipboardList, href: '/patient/settings/goals' },
-    { label: 'Perfil', icon: User, href: '/patient/settings/profile' },
+    { label: 'Perfil', icon: User, href: '/patient/profile' },
   ]
 
   return (
