@@ -22,8 +22,8 @@ export function RegistrationHeatmap({ data }: RegistrationHeatmapProps) {
     const percentage = (count / maxCount) * 100
     if (percentage < 25) return 'bg-sky-200/50 dark:bg-sky-900/20 border-sky-200/50'
     if (percentage < 50) return 'bg-sky-400 dark:bg-sky-700/40 border-sky-400'
-    if (percentage < 75) return 'bg-sky-600 text-white border-sky-600'
-    return 'bg-indigo-700 shadow-sm shadow-indigo-500/20 text-white border-indigo-700'
+    if (percentage < 75) return 'bg-sky-600 border-sky-600'
+    return 'bg-indigo-700 shadow-sm shadow-indigo-500/20 border-indigo-700'
   }
 
   const days = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom']
@@ -31,71 +31,63 @@ export function RegistrationHeatmap({ data }: RegistrationHeatmapProps) {
 
   return (
     <div className="flex flex-col space-y-4">
-      {/* Scrollable Container */}
-      <div className="relative overflow-x-auto pb-6 scrollbar-hide">
-        <div className="inline-flex min-w-full flex-col gap-2">
-          
-          {/* Header (Hours) */}
-          <div className="flex items-center gap-2 pl-10">
-            {hours.map(h => (
-              <div key={h} className="w-8 flex-shrink-0 text-center">
-                <span className={cn(
-                  "text-[8px] font-black uppercase tracking-tighter text-zinc-300",
-                  h % 6 === 0 ? "text-zinc-500" : ""
-                )}>
-                  {h % 3 === 0 ? h.toString().padStart(2, '0') : ''}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Rows (Days) */}
-          {days.map((dayName, dayIndex) => (
-            <div key={dayIndex} className="flex items-center gap-2">
-              {/* Day Label */}
-              <div className="w-8 flex-shrink-0 text-right">
-                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                  {dayName[0]}
-                </span>
-              </div>
-
-              {/* Cells */}
-              <div className="flex gap-2">
-                {hours.map(hour => {
-                  const cellData = data.find(d => d.day === dayIndex && d.hour === hour)
-                  const count = cellData?.count || 0
-                  
-                  return (
-                    <motion.div
-                      key={hour}
-                      initial={{ scale: 0.5, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: (dayIndex * 24 + hour) * 0.002 }}
-                      className={cn(
-                        "group relative h-8 w-8 flex-shrink-0 flex items-center justify-center rounded-lg border transition-all hover:z-10 hover:scale-125",
-                        getIntensityClass(count)
-                      )}
-                    >
-                      {count > 0 && <span className="text-[10px] font-black">{count}</span>}
-
-                      {/* Tooltip */}
-                      <div className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-zinc-900 px-2 py-1 text-[10px] font-bold text-white opacity-0 transition-opacity group-hover:opacity-100 dark:bg-zinc-50 dark:text-zinc-900">
-                        {dayName} {hour}:00 • {count} reg.
-                      </div>
-                    </motion.div>
-                  )
-                })}
-              </div>
+      <div className="flex flex-col gap-2">
+        
+        {/* Header (Days) */}
+        <div className="flex items-center gap-2 pl-10">
+          {days.map((dayName, i) => (
+            <div key={i} className="w-8 flex-shrink-0 text-center">
+              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                {dayName[0]}
+              </span>
             </div>
           ))}
         </div>
 
-        {/* Shadow indicator for scrolling */}
-        <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none dark:from-zinc-900" />
+        {/* Rows (Hours) */}
+        {hours.map((hour) => (
+          <div key={hour} className="flex items-center gap-2">
+            {/* Hour Label */}
+            <div className="w-8 flex-shrink-0 text-right">
+              <span className={cn(
+                "text-[9px] font-black tabular-nums tracking-tighter text-zinc-300",
+                hour % 4 === 0 ? "text-zinc-500" : ""
+              )}>
+                {hour % 2 === 0 ? hour.toString().padStart(2, '0') : ''}
+              </span>
+            </div>
+
+            {/* Cells for each Day */}
+            <div className="flex gap-2">
+              {days.map((_, dayIndex) => {
+                const cellData = data.find(d => d.day === dayIndex && d.hour === hour)
+                const count = cellData?.count || 0
+                
+                return (
+                  <motion.div
+                    key={dayIndex}
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: (hour * 7 + dayIndex) * 0.002 }}
+                    className={cn(
+                      "group relative h-8 w-8 flex-shrink-0 rounded-lg border transition-all hover:z-10 hover:scale-125",
+                      getIntensityClass(count)
+                    )}
+                  >
+                    {/* Tooltip */}
+                    <div className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-zinc-900 px-2 py-1 text-[10px] font-bold text-white opacity-0 transition-opacity group-hover:opacity-100 dark:bg-zinc-50 dark:text-zinc-900">
+                      {days[dayIndex]} {hour}:00 • {count} reg.
+                    </div>
+                  </motion.div>
+                )
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-between px-2">
+      <div className="flex items-center justify-between px-2 pt-4">
         <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Menos activo</span>
         <div className="flex gap-1.5">
           {[0, 25, 50, 75, 100].map((p) => (
