@@ -14,15 +14,25 @@ export default async function NutritionistPage({ searchParams }: { searchParams:
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: patients } = await supabase.from('profiles').select('id, email, full_name').eq('nutritionist_id', user.id)
+  const { data: patients, error: patientsError } = await supabase
+    .from('profiles')
+    .select('id, email, full_name')
+    .eq('nutritionist_id', user.id)
+
+  if (patientsError) console.error('Error fetching patients:', patientsError)
+
   const patientIds = patients?.map((p) => p.id) || []
 
-  // Fetch meals for stats and alerts
-  const { data: mealsData } = await supabase
-    .from('meals')
-    .select('id, patient_id, meal_date, interactions(type)')
-    .in('patient_id', patientIds)
-    .order('meal_date', { ascending: false })
+  // Fetch meals for stats and alerts - Only if there are patients
+  let mealsData: any[] = []
+  if (patientIds.length > 0) {
+    const { data } = await supabase
+      .from('meals')
+      .select('id, patient_id, meal_date, interactions(type)')
+      .in('patient_id', patientIds)
+      .order('meal_date', { ascending: false })
+    mealsData = data || []
+  }
 
   const patientStats = patientIds.map(pid => {
     const pMeals = mealsData?.filter(m => m.patient_id === pid) || []
@@ -59,15 +69,17 @@ export default async function NutritionistPage({ searchParams }: { searchParams:
     .lte('appointment_date', endOfToday.toISOString())
     .order('appointment_date', { ascending: true })
 
-  // Fetch meals for the feed
-  let query = supabase
-    .from('meals')
-    .select('*, patient:profiles!meals_patient_id_fkey(id, email), interactions(*)')
-    .in('patient_id', patientIds)
-    .order('meal_date', { ascending: false })
-    .limit(30)
-
-  const { data: meals } = await query
+  // Fetch meals for the feed - Only if there are patients
+  let meals: any[] = []
+  if (patientIds.length > 0) {
+    const { data } = await supabase
+      .from('meals')
+      .select('*, patient:profiles!meals_patient_id_fkey(id, email), interactions(*)')
+      .in('patient_id', patientIds)
+      .order('meal_date', { ascending: false })
+      .limit(30)
+    meals = data || []
+  }
 
   return (
     <div className="min-h-screen bg-zinc-50 pb-32 dark:bg-zinc-950">
@@ -122,40 +134,74 @@ export default async function NutritionistPage({ searchParams }: { searchParams:
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* Left Column: Agenda */}
-          <div className="lg:col-span-4 space-y-6">
-            <div className="flex items-center justify-between px-2">
-              <div className="flex items-center gap-2">
-                <Calendar size={18} className="text-sky-500" />
-                <h2 className="text-xs font-black uppercase tracking-widest text-zinc-900 dark:text-zinc-50">Agenda de Hoy</h2>
-              </div>
-              <GlobalAgendaTrigger patients={patients?.map(p => ({ id: p.id, name: p.full_name || p.email })) || []} />
-            </div>
-
-            <div className="space-y-3">
-              {!todayAppointments || todayAppointments.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 text-center rounded-3xl border-2 border-dashed border-zinc-100 dark:border-white/5">
-                  <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">No hay turnos hoy</p>
+          {/* Left Column: Agenda & Patients */}
+          <div className="lg:col-span-4 space-y-8">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between px-2">
+                <div className="flex items-center gap-2">
+                  <Calendar size={18} className="text-sky-500" />
+                  <h2 className="text-xs font-black uppercase tracking-widest text-zinc-900 dark:text-zinc-50">Agenda de Hoy</h2>
                 </div>
-              ) : (
-                todayAppointments.map(app => (
-                  <div key={app.id} className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-white/5">
-                    <div className="flex items-center gap-4">
-                      <div className="flex flex-col items-center justify-center h-12 w-12 rounded-2xl bg-sky-50 text-sky-600 dark:bg-sky-500/10">
-                        <span className="text-[10px] font-black">{format(new Date(app.appointment_date), 'HH:mm')}</span>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50">{app.type}</p>
-                        <p className="text-[10px] font-medium text-zinc-400">{app.patient?.full_name || app.patient?.email}</p>
+                <GlobalAgendaTrigger patients={patients?.map(p => ({ id: p.id, name: p.full_name || p.email })) || []} />
+              </div>
+
+              <div className="space-y-3">
+                {!todayAppointments || todayAppointments.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-10 text-center rounded-3xl border-2 border-dashed border-zinc-100 dark:border-white/5">
+                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">No hay turnos hoy</p>
+                  </div>
+                ) : (
+                  todayAppointments.map(app => (
+                    <div key={app.id} className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-white/5">
+                      <div className="flex items-center gap-4">
+                        <div className="flex flex-col items-center justify-center h-12 w-12 rounded-2xl bg-sky-50 text-sky-600 dark:bg-sky-500/10">
+                          <span className="text-[10px] font-black">{format(new Date(app.appointment_date), 'HH:mm')}</span>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50">{app.type}</p>
+                          <p className="text-[10px] font-medium text-zinc-400">{app.patient?.full_name || app.patient?.email}</p>
+                        </div>
                       </div>
                     </div>
+                  ))
+                )}
+                
+                <Link href="/nutritionist/appointments" className="flex items-center justify-center p-4 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-sky-500 transition-colors">
+                  Ver agenda completa <ChevronRight size={12} />
+                </Link>
+              </div>
+            </div>
+
+            {/* Patients List Section */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 px-2">
+                <Users size={18} className="text-indigo-500" />
+                <h2 className="text-xs font-black uppercase tracking-widest text-zinc-900 dark:text-zinc-50">Mis Pacientes</h2>
+              </div>
+              <div className="space-y-2">
+                {!patients || patients.length === 0 ? (
+                  <div className="p-8 text-center rounded-3xl bg-amber-50 border border-amber-100 dark:bg-amber-950/20 dark:border-amber-900/30">
+                    <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest">No tienes pacientes vinculados</p>
+                    <p className="mt-2 text-[8px] text-amber-600/60 break-all font-mono">ID Nutri: {user.id}</p>
                   </div>
-                ))
-              )}
-              
-              <Link href="/nutritionist/appointments" className="flex items-center justify-center p-4 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-sky-500 transition-colors">
-                Ver agenda completa <ChevronRight size={12} />
-              </Link>
+                ) : (
+                  patients.map(p => (
+                    <Link 
+                      key={p.id} 
+                      href={`/nutritionist/patients/${p.id}`}
+                      className="flex items-center gap-3 p-3 rounded-2xl bg-white shadow-sm ring-1 ring-zinc-100 hover:ring-sky-500/30 transition-all dark:bg-zinc-900 dark:ring-white/5"
+                    >
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-50 text-zinc-400 font-bold uppercase text-xs dark:bg-zinc-800">
+                        {(p.full_name?.[0] || p.email?.[0] || 'P').toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-zinc-900 dark:text-zinc-50 truncate">{p.full_name || p.email}</p>
+                        <p className="text-[9px] text-zinc-400 truncate">{p.email}</p>
+                      </div>
+                    </Link>
+                  ))
+                )}
+              </div>
             </div>
           </div>
 
