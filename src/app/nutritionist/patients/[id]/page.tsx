@@ -1,11 +1,8 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect, notFound } from 'next/navigation'
-import { ChevronLeft, Calendar, FileUp, Flame, LayoutGrid, Clock } from 'lucide-react'
+import { ChevronLeft, Calendar, FileUp } from 'lucide-react'
 import Link from 'next/link'
-import { RegistrationHeatmap } from '@/app/patient/components/RegistrationHeatmap'
-import { NutritionistHistoryView } from '../../components/NutritionistHistoryView'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { PatientProfileSections } from '../../components/PatientProfileSections'
 
 export default async function PatientProfileView({ params }: { params: { id: string } }) {
   const { id } = await params
@@ -29,7 +26,7 @@ export default async function PatientProfileView({ params }: { params: { id: str
     .eq('patient_id', id)
     .order('meal_date', { ascending: false })
 
-  // Heatmap calculation logic (Shared with patient page ideally)
+  // Heatmap calculation logic
   const heatmapData = Array.from({ length: 7 * 24 }, (_, i) => ({
     day: Math.floor(i / 24),
     hour: i % 24,
@@ -74,31 +71,13 @@ export default async function PatientProfileView({ params }: { params: { id: str
           </button>
         </section>
 
-        {/* Heatmap Section */}
-        <section className="rounded-[2.5rem] bg-white p-6 shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-white/5">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-50 text-orange-500 dark:bg-orange-500/10">
-                <Flame size={16} />
-              </div>
-              <h2 className="font-outfit text-sm font-bold text-zinc-900 dark:text-zinc-50">Zonas Horarias</h2>
-            </div>
-          </div>
-          <RegistrationHeatmap data={heatmapData} />
-        </section>
-
-        {/* History Section */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between px-1">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-50 text-sky-500 dark:bg-sky-500/10">
-                <Clock size={16} />
-              </div>
-              <h2 className="font-outfit text-sm font-bold text-zinc-900 dark:text-zinc-50">Historial Completo</h2>
-            </div>
-          </div>
-          <NutritionistHistoryView meals={meals || []} currentUserId={user.id} />
-        </section>
+        {/* Tabbed Content */}
+        <PatientProfileSections 
+          meals={meals || []} 
+          patient={patient} 
+          heatmapData={heatmapData} 
+          currentUserId={user.id} 
+        />
       </main>
     </div>
   )
