@@ -52,6 +52,7 @@ const compressImage = (file: File): Promise<Blob> => {
 export function MealCard({ meal, isEditable, currentUserId }: MealCardProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editedComments, setEditedComments] = useState(meal.comments || '')
+  const [editedMealType, setEditedMealType] = useState(meal.meal_type)
   const [editedMealDate, setEditedMealDate] = useState(new Date(meal.meal_date || meal.created_at).toISOString().slice(0, 16))
   const [isUpdating, setIsUpdating] = useState(false)
   
@@ -131,7 +132,7 @@ export function MealCard({ meal, isEditable, currentUserId }: MealCardProps) {
       const formData = new FormData()
       formData.append('mealId', meal.id)
       formData.append('comments', editedComments)
-      formData.append('mealType', meal.meal_type)
+      formData.append('mealType', editedMealType)
       formData.append('mealDate', new Date(editedMealDate).toISOString())
 
       for (const file of newFiles) {
@@ -344,6 +345,25 @@ export function MealCard({ meal, isEditable, currentUserId }: MealCardProps) {
                 onChange={(e) => setEditedComments(e.target.value)}
                 placeholder="Describe tu comida..."
               />
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Categoría</label>
+                <select
+                  value={editedMealType}
+                  onChange={(e) => setEditedMealType(e.target.value)}
+                  className="w-full rounded-xl border-none bg-zinc-50 px-4 py-2 text-xs font-bold ring-1 ring-zinc-200 focus:ring-2 focus:ring-sky-500 dark:bg-zinc-950 dark:text-zinc-50 dark:ring-zinc-800"
+                >
+                  <option value="Desayuno">Desayuno</option>
+                  <option value="Almuerzo">Almuerzo</option>
+                  <option value="Merienda">Merienda</option>
+                  <option value="Cena">Cena</option>
+                  <option value="Snack">Snack</option>
+                  <option value="Actividad Física">Actividad Física</option>
+                  <option value="Suplementación">Suplementación</option>
+                  <option value="Hidratación">Hidratación</option>
+                </select>
+              </div>
+
               <div className="flex gap-2">
                 <input 
                   type="datetime-local" 

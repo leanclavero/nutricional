@@ -1,10 +1,11 @@
 'use client'
 
 import React, { useState } from 'react'
-import { LayoutGrid, LayoutList, Calendar, History as HistoryIcon } from 'lucide-react'
+import { LayoutGrid, LayoutList, Calendar, History as HistoryIcon, Filter } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { MealCard } from './MealCard'
+import { MealDetailModal } from './MealDetailModal'
 
 interface HistoryViewProps {
   meals: any[]
@@ -13,6 +14,14 @@ interface HistoryViewProps {
 
 export function HistoryView({ meals, currentUserId }: HistoryViewProps) {
   const [view, setView] = useState<'grid' | 'feed'>('grid')
+  const [selectedCategory, setSelectedCategory] = useState<string>('Todas')
+  const [selectedMeal, setSelectedMeal] = useState<any | null>(null)
+
+  const categories = ['Todas', 'Desayuno', 'Almuerzo', 'Merienda', 'Cena', 'Snack', 'Actividad Física', 'Suplementación', 'Hidratación']
+
+  const filteredMeals = selectedCategory === 'Todas' 
+    ? meals 
+    : meals.filter(m => m.meal_type === selectedCategory)
 
   const isWithin24Hours = (date: string) => {
     const diff = (new Date().getTime() - new Date(date).getTime()) / (1000 * 60 * 60)
@@ -61,6 +70,24 @@ export function HistoryView({ meals, currentUserId }: HistoryViewProps) {
         </div>
       </div>
 
+      {/* Category Filter */}
+      <div className="flex overflow-x-auto pb-2 px-1 gap-2 hide-scrollbar">
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            className={cn(
+              "whitespace-nowrap rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all border",
+              selectedCategory === cat
+                ? "bg-sky-500 border-sky-500 text-white shadow-lg shadow-sky-500/20"
+                : "bg-white border-zinc-100 text-zinc-400 hover:border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800"
+            )}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
       <AnimatePresence mode="wait">
         {view === 'grid' ? (
           <motion.div
@@ -70,10 +97,14 @@ export function HistoryView({ meals, currentUserId }: HistoryViewProps) {
             exit={{ opacity: 0, y: -10 }}
             className="grid grid-cols-3 gap-1 px-1"
           >
-            {meals.map((meal) => {
+            {filteredMeals.map((meal) => {
               const photo = meal.photo_urls?.[0]
               return (
-                <div key={meal.id} className="relative aspect-square overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-50 dark:border-zinc-800">
+                <div 
+                  key={meal.id} 
+                  onClick={() => setSelectedMeal(meal)}
+                  className="relative aspect-square overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-50 dark:border-zinc-800 cursor-pointer"
+                >
                   {photo ? (
                     <img 
                       src={photo} 
@@ -103,7 +134,7 @@ export function HistoryView({ meals, currentUserId }: HistoryViewProps) {
             exit={{ opacity: 0, y: -10 }}
             className="flex flex-col gap-8"
           >
-            {meals.map((meal) => (
+            {filteredMeals.map((meal) => (
               <MealCard 
                 key={meal.id} 
                 meal={meal} 
@@ -114,6 +145,13 @@ export function HistoryView({ meals, currentUserId }: HistoryViewProps) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <MealDetailModal 
+        meal={selectedMeal} 
+        isOpen={!!selectedMeal} 
+        onClose={() => setSelectedMeal(null)} 
+        currentUserId={currentUserId}
+      />
     </div>
   )
 }

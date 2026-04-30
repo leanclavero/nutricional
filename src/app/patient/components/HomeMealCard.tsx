@@ -13,14 +13,15 @@ interface HomeMealCardProps {
     photo_urls: string[]
     meal_date: string
   }
+  onClick?: () => void
 }
 
-export function HomeMealCard({ meal }: HomeMealCardProps) {
+export function HomeMealCard({ meal, onClick }: HomeMealCardProps) {
   const photo = meal.photo_urls?.[0]
   const isPhysical = meal.meal_type === 'Actividad Física'
 
   return (
-    <Link href="/patient/history">
+    <div onClick={onClick} className="cursor-pointer">
       <motion.div
         layout
         initial={{ opacity: 0, scale: 0.95 }}
@@ -57,6 +58,6 @@ export function HomeMealCard({ meal }: HomeMealCardProps) {
           </div>
         )}
       </motion.div>
-    </Link>
+    </div>
   )
 }

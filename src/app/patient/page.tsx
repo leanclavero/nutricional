@@ -5,7 +5,7 @@ import { DailyProgressBar } from './components/DailyProgressBar'
 import { LastMealCounter } from './components/LastMealCounter'
 import { Calendar, Plus } from 'lucide-react'
 import { cookies } from 'next/headers'
-import { HomeMealCard } from './components/HomeMealCard'
+import { HomeMealGrid } from './components/HomeMealGrid'
 
 export default async function PatientDashboard() {
   const supabase = await createClient()
@@ -72,17 +72,6 @@ export default async function PatientDashboard() {
   const dailyTarget = profile?.daily_meals_target || 4
   const todayMealsCount = todayMeals?.length || 0
 
-  const getSpan = (index: number, total: number) => {
-    if (total === 1) return "col-span-6"
-    if (total === 2) return "col-span-3"
-    if (total === 3) return "col-span-2"
-    if (total === 4) return "col-span-3"
-    if (total === 5) {
-      return index < 3 ? "col-span-2" : "col-span-3"
-    }
-    return "col-span-2"
-  }
-
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <header className="sticky top-0 z-40 w-full border-b border-zinc-100 bg-white/80 px-4 py-3 backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-900/80">
@@ -125,13 +114,7 @@ export default async function PatientDashboard() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-6 gap-2">
-              {todayMeals.map((meal, idx) => (
-                <div key={meal.id} className={getSpan(idx, todayMeals.length)}>
-                  <HomeMealCard meal={meal} />
-                </div>
-              ))}
-            </div>
+            <HomeMealGrid meals={todayMeals} currentUserId={user.id} />
           )}
         </section>
 
