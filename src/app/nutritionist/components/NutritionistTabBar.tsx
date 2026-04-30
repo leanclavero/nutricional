@@ -17,7 +17,7 @@ export function NutritionistTabBar() {
   ]
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 flex h-20 items-center justify-around border-t border-zinc-100 bg-white/90 px-4 pb-2 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-900/90 md:hidden">
+    <div className="fixed bottom-0 left-0 right-0 z-50 flex h-20 items-center justify-around border-t border-zinc-100 bg-white/90 px-4 pb-2 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-900/90 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
       {tabs.map((tab) => {
         const isActive = pathname === tab.href || (tab.href !== '/nutritionist' && pathname.startsWith(tab.href))
         const Icon = tab.icon

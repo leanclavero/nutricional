@@ -6,6 +6,7 @@ import { LogOut, Users, Search, Activity, MessageSquare, Heart } from 'lucide-re
 import { PatientList } from './components/PatientList'
 import { FilterTabs } from './components/FilterTabs'
 import { NutritionistFeed } from './components/NutritionistFeed'
+import Link from 'next/link'
 
 export default async function NutritionistPage({ searchParams }: { searchParams: { patientId?: string, filter?: 'vistos' | 'pendientes' | 'favoritos' } }) {
   const params = await searchParams
@@ -78,7 +79,15 @@ export default async function NutritionistPage({ searchParams }: { searchParams:
               </div>
             )}
           </div>
-          <form action={logout}><button type="submit" className="flex items-center gap-2 rounded-lg p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-red-500 dark:text-zinc-400 dark:hover:bg-zinc-800" title="Cerrar Sesión"><LogOut size={20} /></button></form>
+          <nav className="hidden md:flex items-center gap-8">
+            <Link href="/nutritionist" className="text-sm font-bold text-sky-500">Feed</Link>
+            <Link href="/nutritionist/patients" className="text-sm font-bold text-zinc-500 hover:text-sky-500 transition-colors">Pacientes</Link>
+            <Link href="/nutritionist/appointments" className="text-sm font-bold text-zinc-500 hover:text-sky-500 transition-colors">Turnos</Link>
+            <Link href="/nutritionist/profile" className="text-sm font-bold text-zinc-500 hover:text-sky-500 transition-colors">Perfil</Link>
+          </nav>
+          <div className="flex items-center gap-4">
+            <form action={logout}><button type="submit" className="flex items-center gap-2 rounded-lg p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-red-500 dark:text-zinc-400 dark:hover:bg-zinc-800" title="Cerrar Sesión"><LogOut size={20} /></button></form>
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-5xl px-6 py-8">

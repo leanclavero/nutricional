@@ -20,7 +20,7 @@ export function PatientList({ patients, selectedId }: { patients: Patient[], sel
   
   const handleSelect = (id: string | null) => {
     startTransition(() => {
-      router.push(id ? `/nutritionist?patientId=${id}` : '/nutritionist')
+      router.push(id ? `/nutritionist/patients/${id}` : '/nutritionist')
     })
   }
 
