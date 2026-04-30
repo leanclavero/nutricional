@@ -48,14 +48,8 @@ export function DailyProgressBar({ current, target = 4, meals = [] }: DailyProgr
         </div>
         
         <div className="flex items-center gap-3">
-          <span className={cn(
-            "text-lg font-black tabular-nums",
-            isComplete ? "text-emerald-500" : "text-sky-500"
-          )}>
-            {current}<span className="text-sm font-semibold text-zinc-300">/{target}</span>
-          </span>
-          <Link href="/patient/settings/goals" className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-50 text-zinc-300 transition-colors hover:bg-zinc-100 hover:text-zinc-500 dark:bg-zinc-800 dark:text-zinc-600 dark:hover:bg-zinc-700">
-            <Settings size={14} />
+          <Link href="/patient/settings/goals" className="flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-50 text-zinc-400 transition-all hover:bg-sky-50 hover:text-sky-500 dark:bg-zinc-800 dark:text-zinc-500 dark:hover:bg-sky-900/20 dark:hover:text-sky-400 border border-zinc-100 dark:border-zinc-800">
+            <Settings size={20} />
           </Link>
         </div>
       </div>
