@@ -61,3 +61,24 @@ export async function deleteInteraction(interactionId: string) {
   if (error) throw new Error(`Delete failed: ${error.message}`)
   revalidatePath('/nutritionist')
 }
+
+export async function createAppointment(data: { patientId: string, date: string, type: string, notes?: string }) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { error } = await supabase.from('appointments').insert({
+    nutritionist_id: user.id,
+    patient_id: data.patientId,
+    appointment_date: data.date,
+    type: data.type,
+    notes: data.notes,
+    status: 'pending'
+  })
+
+  if (error) throw new Error(`Failed to create appointment: ${error.message}`)
+  
+  revalidatePath('/nutritionist')
+  revalidatePath('/nutritionist/appointments')
+  revalidatePath('/patient/appointments')
+}

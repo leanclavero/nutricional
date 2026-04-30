@@ -1,8 +1,9 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect, notFound } from 'next/navigation'
-import { ChevronLeft, Calendar, FileUp } from 'lucide-react'
+import { ChevronLeft, FileUp } from 'lucide-react'
 import Link from 'next/link'
 import { PatientProfileSections } from '../../components/PatientProfileSections'
+import { PatientAgendaTrigger } from '../../components/PatientAgendaTrigger'
 
 export default async function PatientProfileView({ params }: { params: { id: string } }) {
   const { id } = await params
@@ -61,10 +62,7 @@ export default async function PatientProfileView({ params }: { params: { id: str
       <main className="mx-auto max-w-lg space-y-6 px-4 pt-6">
         {/* Actions Bar */}
         <section className="grid grid-cols-2 gap-3">
-          <button className="flex items-center justify-center gap-2 rounded-2xl bg-sky-500 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-sky-500/20 transition-transform active:scale-95">
-            <Calendar size={16} />
-            Agendar
-          </button>
+          <PatientAgendaTrigger patient={{ id: patient.id, name: patient.full_name || patient.email }} />
           <button className="flex items-center justify-center gap-2 rounded-2xl bg-white py-4 text-xs font-black uppercase tracking-widest text-zinc-600 shadow-sm ring-1 ring-zinc-100 transition-transform active:scale-95 dark:bg-zinc-900 dark:text-zinc-400 dark:ring-white/5">
             <FileUp size={16} />
             Cargar Archivo
