@@ -1,9 +1,12 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { logout } from '@/app/auth/actions'
-import { LogOut, Users, MessageSquare, Calendar, AlertCircle, Clock, ChevronRight } from 'lucide-react'
+import { LogOut, Users, MessageSquare, Calendar, AlertCircle, Clock, ChevronRight, Plus } from 'lucide-react'
 import { NutritionistFeed } from './components/NutritionistFeed'
 import Link from 'next/link'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
+import { GlobalAgendaTrigger } from './components/GlobalAgendaTrigger'
 
 export default async function NutritionistPage({ searchParams }: { searchParams: { filter?: 'vistos' | 'pendientes' | 'favoritos' } }) {
   const params = await searchParams
@@ -42,13 +45,27 @@ export default async function NutritionistPage({ searchParams }: { searchParams:
     return diffHours > 48
   })
 
+  // Fetch real appointments for today
+  const startOfToday = new Date()
+  startOfToday.setHours(0, 0, 0, 0)
+  const endOfToday = new Date()
+  endOfToday.setHours(23, 59, 59, 999)
+
+  const { data: todayAppointments } = await supabase
+    .from('appointments')
+    .select('*, patient:profiles!appointments_patient_id_fkey(full_name, email)')
+    .eq('nutritionist_id', user.id)
+    .gte('appointment_date', startOfToday.toISOString())
+    .lte('appointment_date', endOfToday.toISOString())
+    .order('appointment_date', { ascending: true })
+
   // Fetch meals for the feed
   let query = supabase
     .from('meals')
     .select('*, patient:profiles!meals_patient_id_fkey(id, email), interactions(*)')
     .in('patient_id', patientIds)
     .order('meal_date', { ascending: false })
-    .limit(20)
+    .limit(30)
 
   const { data: meals } = await query
 
@@ -112,33 +129,30 @@ export default async function NutritionistPage({ searchParams }: { searchParams:
                 <Calendar size={18} className="text-sky-500" />
                 <h2 className="text-xs font-black uppercase tracking-widest text-zinc-900 dark:text-zinc-50">Agenda de Hoy</h2>
               </div>
-              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</span>
+              <GlobalAgendaTrigger patients={patients?.map(p => ({ id: p.id, name: p.full_name || p.email })) || []} />
             </div>
 
             <div className="space-y-3">
-              {/* Mock Appointments */}
-              <div className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-white/5">
-                <div className="flex items-center gap-4">
-                  <div className="flex flex-col items-center justify-center h-12 w-12 rounded-2xl bg-sky-50 text-sky-600 dark:bg-sky-500/10">
-                    <span className="text-[10px] font-black">09:00</span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50">Primera Consulta</p>
-                    <p className="text-[10px] font-medium text-zinc-400">Juan Pérez</p>
-                  </div>
+              {!todayAppointments || todayAppointments.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10 text-center rounded-3xl border-2 border-dashed border-zinc-100 dark:border-white/5">
+                  <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">No hay turnos hoy</p>
                 </div>
-              </div>
-              <div className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-white/5">
-                <div className="flex items-center gap-4">
-                  <div className="flex flex-col items-center justify-center h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10">
-                    <span className="text-[10px] font-black">11:30</span>
+              ) : (
+                todayAppointments.map(app => (
+                  <div key={app.id} className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-white/5">
+                    <div className="flex items-center gap-4">
+                      <div className="flex flex-col items-center justify-center h-12 w-12 rounded-2xl bg-sky-50 text-sky-600 dark:bg-sky-500/10">
+                        <span className="text-[10px] font-black">{format(new Date(app.appointment_date), 'HH:mm')}</span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50">{app.type}</p>
+                        <p className="text-[10px] font-medium text-zinc-400">{app.patient?.full_name || app.patient?.email}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50">Control Mensual</p>
-                    <p className="text-[10px] font-medium text-zinc-400">María García</p>
-                  </div>
-                </div>
-              </div>
+                ))
+              )}
+              
               <Link href="/nutritionist/appointments" className="flex items-center justify-center p-4 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-sky-500 transition-colors">
                 Ver agenda completa <ChevronRight size={12} />
               </Link>
