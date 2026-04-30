@@ -1,136 +1,166 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
-import { NutritionistMealCard } from './components/NutritionistMealCard'
 import { logout } from '@/app/auth/actions'
-import { LogOut, Users, Search, Activity, MessageSquare, Heart } from 'lucide-react'
-import { PatientList } from './components/PatientList'
-import { FilterTabs } from './components/FilterTabs'
+import { LogOut, Users, MessageSquare, Calendar, AlertCircle, Clock, ChevronRight } from 'lucide-react'
 import { NutritionistFeed } from './components/NutritionistFeed'
 import Link from 'next/link'
 
-export default async function NutritionistPage({ searchParams }: { searchParams: { patientId?: string, filter?: 'vistos' | 'pendientes' | 'favoritos' } }) {
+export default async function NutritionistPage({ searchParams }: { searchParams: { filter?: 'vistos' | 'pendientes' | 'favoritos' } }) {
   const params = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: notifications } = await supabase.from('notifications').select('id').eq('user_id', user.id).eq('is_read', false)
-  const { data: patients } = await supabase.from('profiles').select('id, email').eq('nutritionist_id', user.id)
+  const { data: patients } = await supabase.from('profiles').select('id, email, full_name').eq('nutritionist_id', user.id)
   const patientIds = patients?.map((p) => p.id) || []
 
-  // Optimize stats: only fetch meals from last 15 days for the sidebar counts
-  const fifteenDaysAgo = new Date()
-  fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15)
-
+  // Fetch meals for stats and alerts
   const { data: mealsData } = await supabase
     .from('meals')
     .select('id, patient_id, meal_date, interactions(type)')
     .in('patient_id', patientIds)
-    .gt('meal_date', fifteenDaysAgo.toISOString())
-
-  // Efficiently group meals by patient
-  const mealsByPatient: Record<string, any[]> = {}
-  mealsData?.forEach((m: any) => {
-    if (!mealsByPatient[m.patient_id]) mealsByPatient[m.patient_id] = []
-    mealsByPatient[m.patient_id].push(m)
-  })
+    .order('meal_date', { ascending: false })
 
   const patientStats = patientIds.map(pid => {
-    const pMeals = mealsByPatient[pid] || []
-    // A meal is pending if it DOES NOT have a 'like' (visto) from the nutritionist
+    const pMeals = mealsData?.filter(m => m.patient_id === pid) || []
     const pendingCount = pMeals.filter(m => !m.interactions.some((i: any) => i.type === 'like')).length
-    const lastMeal = pMeals.length > 0 
-      ? pMeals.reduce((prev, curr) => new Date(curr.meal_date) > new Date(prev.meal_date) ? curr : prev).meal_date
-      : null
+    const lastMeal = pMeals.length > 0 ? pMeals[0].meal_date : null
     
+    const patientData = patients?.find(p => p.id === pid)
     return {
       id: pid,
-      email: patients?.find(p => p.id === pid)?.email || '',
+      email: patientData?.email || '',
+      name: patientData?.full_name || patientData?.email || 'Paciente',
       last_meal_date: lastMeal,
       pending_feedback_count: pendingCount
     }
   })
 
-  const totalPending = patientStats.reduce((acc, curr) => acc + curr.pending_feedback_count, 0)
+  const inactivePatients = patientStats.filter(p => {
+    if (!p.last_meal_date) return true
+    const diffHours = (new Date().getTime() - new Date(p.last_meal_date).getTime()) / (1000 * 60 * 60)
+    return diffHours > 48
+  })
 
+  // Fetch meals for the feed
   let query = supabase
     .from('meals')
     .select('*, patient:profiles!meals_patient_id_fkey(id, email), interactions(*)')
     .in('patient_id', patientIds)
     .order('meal_date', { ascending: false })
-    .limit(50) // Pagination: Only show top 50
-  if (params.patientId) query = query.eq('patient_id', params.patientId)
+    .limit(20)
 
-  const { data: meals, error } = await query
-  if (error) console.error('Error fetching meals:', error)
+  const { data: meals } = await query
 
   return (
-    <div className="min-h-screen bg-zinc-50 pb-24 dark:bg-zinc-950">
-      <header className="sticky top-0 z-40 w-full border-b border-zinc-100 bg-white/80 px-6 py-4 backdrop-blur-md dark:border-white/10 dark:bg-zinc-900/80">
-        <div className="mx-auto flex max-w-5xl items-center justify-between">
+    <div className="min-h-screen bg-zinc-50 pb-32 dark:bg-zinc-950">
+      <header className="sticky top-0 z-40 w-full border-b border-zinc-100 bg-white/80 px-6 py-4 backdrop-blur-xl dark:border-white/5 dark:bg-zinc-900/80">
+        <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Nutri-Feed <span className="font-light text-zinc-400">Pro</span></h1>
-            {notifications && notifications.length > 0 && (
-              <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-                <MessageSquare size={18} />
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
-                  {notifications.length}
-                </span>
-              </div>
-            )}
+            <h1 className="font-outfit text-xl font-black tracking-tight text-zinc-900 dark:text-zinc-50">
+              Nutri-<span className="text-sky-500">Feed</span> <span className="ml-1 text-[10px] font-black uppercase tracking-widest text-zinc-400">Pro</span>
+            </h1>
           </div>
           <nav className="hidden md:flex items-center gap-8">
-            <Link href="/nutritionist" className="text-sm font-bold text-sky-500">Feed</Link>
-            <Link href="/nutritionist/patients" className="text-sm font-bold text-zinc-500 hover:text-sky-500 transition-colors">Pacientes</Link>
-            <Link href="/nutritionist/appointments" className="text-sm font-bold text-zinc-500 hover:text-sky-500 transition-colors">Turnos</Link>
-            <Link href="/nutritionist/profile" className="text-sm font-bold text-zinc-500 hover:text-sky-500 transition-colors">Perfil</Link>
+            <Link href="/nutritionist" className="text-xs font-black uppercase tracking-widest text-sky-500">Panel</Link>
+            <Link href="/nutritionist/patients" className="text-xs font-black uppercase tracking-widest text-zinc-400 hover:text-sky-500 transition-colors">Pacientes</Link>
+            <Link href="/nutritionist/appointments" className="text-xs font-black uppercase tracking-widest text-zinc-400 hover:text-sky-500 transition-colors">Turnos</Link>
           </nav>
-          <div className="flex items-center gap-4">
-            <form action={logout}><button type="submit" className="flex items-center gap-2 rounded-lg p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-red-500 dark:text-zinc-400 dark:hover:bg-zinc-800" title="Cerrar Sesión"><LogOut size={20} /></button></form>
-          </div>
+          <form action={logout}>
+            <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-50 text-zinc-400 hover:bg-red-50 hover:text-red-500 transition-all dark:bg-zinc-800">
+              <LogOut size={18} />
+            </button>
+          </form>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-6 py-8">
-        {/* Dashboard Stats */}
-        <div className="mb-10 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-white/10">
-            <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400"><Users size={16} /><span className="text-[10px] font-bold uppercase tracking-wider">Pacientes</span></div>
-            <p className="mt-1 text-2xl font-bold text-zinc-900 dark:text-zinc-50">{patients?.length || 0}</p>
-          </div>
-          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-white/10">
-            <div className="flex items-center gap-2 text-blue-500"><MessageSquare size={16} /><span className="text-[10px] font-bold uppercase tracking-wider">Pendientes</span></div>
-            <p className="mt-1 text-2xl font-bold text-blue-600">{totalPending}</p>
-          </div>
-          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-white/10">
-            <div className="flex items-center gap-2 text-emerald-500"><Activity size={16} /><span className="text-[10px] font-bold uppercase tracking-wider">Registros Hoy</span></div>
-            <p className="mt-1 text-2xl font-bold text-emerald-600">
-              {mealsData?.filter(m => new Date(m.meal_date).toDateString() === new Date().toDateString()).length || 0}
-            </p>
-          </div>
-          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-white/10">
-            <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400"><Heart size={16} /><span className="text-[10px] font-bold uppercase tracking-wider">Mi Email</span></div>
-            <p className="mt-2 text-[10px] font-medium text-zinc-400 truncate">{user.email}</p>
-          </div>
-        </div>
 
-        <div className="flex flex-col gap-10 lg:flex-row">
-          <aside className="w-full lg:w-80">
-            <div className="sticky top-24">
-              <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-zinc-400">Panel de Pacientes</h3>
-              <PatientList 
-                patients={patientStats} 
-                selectedId={params.patientId} 
-              />
+      <main className="mx-auto max-w-6xl px-4 py-8 space-y-8">
+        
+        {/* Alerts Section */}
+        {inactivePatients.length > 0 && (
+          <section className="space-y-4">
+            <div className="flex items-center gap-2 px-2 text-red-500">
+              <AlertCircle size={18} />
+              <h2 className="text-xs font-black uppercase tracking-widest">Alertas de Inactividad</h2>
             </div>
-          </aside>
+            <div className="flex gap-4 overflow-x-auto pb-2 hide-scrollbar">
+              {inactivePatients.map(p => (
+                <Link 
+                  key={p.id} 
+                  href={`/nutritionist/patients/${p.id}`}
+                  className="flex shrink-0 w-64 items-center gap-4 rounded-3xl bg-red-50 p-4 ring-1 ring-red-100 transition-transform hover:scale-[1.02] dark:bg-red-950/20 dark:ring-red-900/30"
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-500 text-white font-bold shadow-lg shadow-red-500/20 uppercase">
+                    {p.name[0]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-red-900 dark:text-red-200 truncate">{p.name}</p>
+                    <p className="text-[10px] font-medium text-red-600 dark:text-red-400">Sin registros hace 48h+</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
-          <NutritionistFeed 
-            initialMeals={meals || []} 
-            currentUserId={user.id} 
-            patientId={params.patientId}
-            initialFilter={params.filter}
-            patients={patients || []}
-          />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* Left Column: Agenda */}
+          <div className="lg:col-span-4 space-y-6">
+            <div className="flex items-center justify-between px-2">
+              <div className="flex items-center gap-2">
+                <Calendar size={18} className="text-sky-500" />
+                <h2 className="text-xs font-black uppercase tracking-widest text-zinc-900 dark:text-zinc-50">Agenda de Hoy</h2>
+              </div>
+              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</span>
+            </div>
+
+            <div className="space-y-3">
+              {/* Mock Appointments */}
+              <div className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-white/5">
+                <div className="flex items-center gap-4">
+                  <div className="flex flex-col items-center justify-center h-12 w-12 rounded-2xl bg-sky-50 text-sky-600 dark:bg-sky-500/10">
+                    <span className="text-[10px] font-black">09:00</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50">Primera Consulta</p>
+                    <p className="text-[10px] font-medium text-zinc-400">Juan Pérez</p>
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-white/5">
+                <div className="flex items-center gap-4">
+                  <div className="flex flex-col items-center justify-center h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10">
+                    <span className="text-[10px] font-black">11:30</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50">Control Mensual</p>
+                    <p className="text-[10px] font-medium text-zinc-400">María García</p>
+                  </div>
+                </div>
+              </div>
+              <Link href="/nutritionist/appointments" className="flex items-center justify-center p-4 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-sky-500 transition-colors">
+                Ver agenda completa <ChevronRight size={12} />
+              </Link>
+            </div>
+          </div>
+
+          {/* Right Column: Feed */}
+          <div className="lg:col-span-8 space-y-6">
+            <div className="flex items-center justify-between px-2">
+              <div className="flex items-center gap-2">
+                <Clock size={18} className="text-emerald-500" />
+                <h2 className="text-xs font-black uppercase tracking-widest text-zinc-900 dark:text-zinc-50">Actividad Reciente</h2>
+              </div>
+            </div>
+
+            <NutritionistFeed 
+              initialMeals={meals || []} 
+              currentUserId={user.id} 
+              patients={patients || []}
+            />
+          </div>
+
         </div>
       </main>
     </div>
